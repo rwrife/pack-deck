@@ -6,7 +6,12 @@ Local-first iPhone trip-packing planner: reusable gear kits, deterministic quant
 
 Pack Deck helps travelers avoid overpacking and forgetting essentials. Users define reusable kits (carry-on tech, weekender clothes, baby gear, trail kit), build trips from those kits, and track packing progress as an append-only ledger of item states (`planned`, `packed`, `missing`, `omitted`, `unknown`).
 
-The app is scaffold-stage today. This repository currently contains documentation, issue backlog, and policy/toolchain contracts for a native Swift iPhone-only build.
+The app is in early build-out. The repository now carries the native Swift
+project skeleton — `PackDeck.xcodeproj` (app target `PackDeck`), the pure
+domain package `Packages/PackDeckKit`, and the persistence package
+`Packages/PackDeckStore` — plus the CI policy gates described under
+"Platform contract". Domain logic, persistence, and UI land in later
+milestones (see "Current status and milestones").
 
 ## Motivation
 
@@ -76,15 +81,28 @@ Current build shape is a standard native iPhone app. Native iPad support is disa
 - ✅ Repository, topics, and iOS App Store Connect secrets configured.
 - ✅ Bundle ID registered in App Store Connect.
 - ✅ README/PLAN/toolchain scaffold committed.
-- 🔜 Native Swift project skeleton + CI contract implementation.
-- 🔜 Domain model, persistence, workflow UI, export/backup, and release automation.
+- ✅ M1: Native Swift project skeleton (`PackDeck.xcodeproj`, `PackDeckKit`, `PackDeckStore`) + iPhone-only + toolchain pin + zero-network + native-only CI policy gates (issue #1).
+- 🔜 M2: Domain model, kit/trip models, and deterministic recommendation engine (issue #2).
+- 🔜 M3: PackDeckStore persistence — GRDB schema, migrations, versioned backup (issue #3).
+- 🔜 M4: Kit library UI — create, edit, and reuse packing kit templates (issue #4).
+- 🔜 M5: Trip builder and packing workspace UI (issue #5).
+- 🔜 M6: Export/import — JSON backup and CSV checklist export (issue #6).
+- 🔜 M7: Accessibility and interaction QA pass (issue #7).
 
-## Development quickstart (scaffold stage)
+## Development quickstart
 
-1. Install Xcode 26.0.1 (or newer with iOS 26+ SDK), Swift 6 toolchain.
-2. Implement issue #1 to create `PackDeck.xcodeproj` and package modules.
-3. Enforce iPhone-only target settings (`TARGETED_DEVICE_FAMILY = 1`).
-4. Run local tests and CI checks from the issue backlog acceptance criteria.
+1. Install Xcode 26.0.1 (or newer with iOS 26+ SDK), Swift 6 toolchain (exact pin in `toolchain.json`).
+2. Open `PackDeck.xcodeproj` in Xcode or run the Swift package tests:
+   ```bash
+   swift test --package-path Packages/PackDeckKit
+   swift test --package-path Packages/PackDeckStore
+   ```
+3. Run the zero-network and native-only gates locally:
+   ```bash
+   bash scripts/check_zero_network.sh
+   bash scripts/check_native_only.sh
+   ```
+4. Verify the iPhone-only build in CI on `macos-26` runner (asserts `TARGETED_DEVICE_FAMILY = 1` pre- and post-build, bundle id `com.infinityball.packdeck`, and privacy manifest embedding).
 
 ## App Store / signing plan
 
