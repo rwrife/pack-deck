@@ -65,9 +65,9 @@ Primary surfaces:
 
 ### M1 — Native scaffold + CI policy gates
 
-- Create Xcode project and package modules.
-- Enforce iPhone-only build settings and bundle ID policy.
-- Add CI checks for native-only framework policy and iOS 26+ toolchain contract.
+- [x] Create Xcode project and package modules (`PackDeck.xcodeproj`, `PackDeckKit`, `PackDeckStore`).
+- [x] Enforce iPhone-only build settings (`TARGETED_DEVICE_FAMILY = 1`) and bundle ID policy (`com.infinityball.packdeck`).
+- [x] Add CI checks for native-only framework policy, zero-network empty-allowlist gate, and iOS 26+ toolchain contract.
 
 ### M2 — Domain engine
 
