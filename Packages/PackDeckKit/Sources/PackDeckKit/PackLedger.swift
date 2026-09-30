@@ -51,9 +51,11 @@ public struct PackLedger: Codable, Hashable, Sendable {
         self.transitions = transitions
     }
 
-    /// Accepts a transition history without replay validation — reserved for
-    /// lossless Codable round-trips of previously verified datasets.
-    public static func unchecked(transitions: [PackTransition] = []) -> PackLedger {
+    /// Accepts a transition history without replay validation — module-internal
+    /// and reserved for lossless re-derivation of already-validated datasets
+    /// (e.g. `PackDeckDataset.recordTransition`). External callers cannot
+    /// obtain an unvalidated ledger.
+    static func unchecked(transitions: [PackTransition] = []) -> PackLedger {
         PackLedger(unchecked: transitions)
     }
 
