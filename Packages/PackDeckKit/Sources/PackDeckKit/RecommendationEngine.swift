@@ -41,53 +41,96 @@ public struct RecommendationEngine: Sendable {
             )
         }
 
-        let tripDays = duration + 1
+        // duration == Int.max must not trap the +1; a saturated day count
+        // is a derived artifact and is surfaced as low confidence below.
+        let daysSum = duration.addingReportingOverflow(1)
+        let tripDays = daysSum.overflow ? Int.max : daysSum.partialValue
 
         switch trip.laundryAccess {
         case .unavailable:
-            return Recommendation(
-                id: item.id,
-                quantity: normalizedBase * tripDays,
+            return scaledRecommendation(
+                for: item,
+                base: normalizedBase,
+                days: tripDays,
                 reason: .fullTripWithoutLaundry,
-                confidence: baseWasInvalid
-                    ? .lowConfidence(reason: RecommendationReason.invalidBaseQuantityNormalized.rawValue)
-                    : .confident
+                baseWasInvalid: baseWasInvalid,
+                daysSaturated: daysSum.overflow
             )
 
         case .available:
             if tripDays > laundryCycleDays {
-                return Recommendation(
-                    id: item.id,
-                    quantity: normalizedBase * laundryCycleDays,
+                return scaledRecommendation(
+                    for: item,
+                    base: normalizedBase,
+                    days: laundryCycleDays,
                     reason: .laundryCycleCap,
-                    confidence: baseWasInvalid
-                        ? .lowConfidence(reason: RecommendationReason.invalidBaseQuantityNormalized.rawValue)
-                        : .confident
+                    baseWasInvalid: baseWasInvalid
                 )
             }
 
-            return Recommendation(
-                id: item.id,
-                quantity: normalizedBase * tripDays,
+            return scaledRecommendation(
+                for: item,
+                base: normalizedBase,
+                days: tripDays,
                 reason: .tripDurationScaled,
-                confidence: baseWasInvalid
-                    ? .lowConfidence(reason: RecommendationReason.invalidBaseQuantityNormalized.rawValue)
-                    : .confident
+                baseWasInvalid: baseWasInvalid
             )
 
         case .unknown:
             let conservativeDays = min(tripDays, laundryCycleDays)
-            return Recommendation(
-                id: item.id,
-                quantity: normalizedBase * conservativeDays,
+            return scaledRecommendation(
+                for: item,
+                base: normalizedBase,
+                days: conservativeDays,
                 reason: .unknownLaundryConservative,
-                confidence: .lowConfidence(
-                    reason: baseWasInvalid
-                        ? RecommendationReason.invalidBaseQuantityNormalized.rawValue
-                        : RecommendationReason.unknownLaundryConservative.rawValue
-                )
+                baseWasInvalid: baseWasInvalid,
+                forceLowConfidence: true
             )
         }
+    }
+
+    /// Multiplies base by days without trapping; a saturating overflow is
+    /// reported explicitly via `quantityOverflowSaturated` and always
+    /// downgrades confidence — a saturated number is never presented as a
+    /// confident recommendation.
+    private func scaledRecommendation(
+        for item: KitItem,
+        base: Int,
+        days: Int,
+        reason: RecommendationReason,
+        baseWasInvalid: Bool,
+        forceLowConfidence: Bool = false,
+        daysSaturated: Bool = false
+    ) -> Recommendation {
+        let product = base.multipliedReportingOverflow(by: max(days, 1))
+        let overflowed = product.overflow || daysSaturated
+
+        var lowReasons: [String] = []
+        if overflowed {
+            lowReasons.append(RecommendationReason.quantityOverflowSaturated.rawValue)
+        }
+        if baseWasInvalid {
+            lowReasons.append(RecommendationReason.invalidBaseQuantityNormalized.rawValue)
+        }
+        if forceLowConfidence, lowReasons.isEmpty {
+            lowReasons.append(RecommendationReason.unknownLaundryConservative.rawValue)
+        }
+
+        guard !lowReasons.isEmpty else {
+            return Recommendation(
+                id: item.id,
+                quantity: product.partialValue,
+                reason: reason,
+                confidence: .confident
+            )
+        }
+
+        return Recommendation(
+            id: item.id,
+            quantity: overflowed ? Int.max : product.partialValue,
+            reason: reason,
+            confidence: .lowConfidence(reason: lowReasons.joined(separator: "; "))
+        )
     }
 
     private func lowConfidence(reason: RecommendationReason, force: Bool) -> Confidence {

@@ -125,6 +125,25 @@ struct RecommendationEngineTests {
             )
         )
     }
+
+    @Test("extreme durations and base quantities saturate without trapping")
+    func overflowSaturatesExplicitly() {
+        let hugeTrip = Trip(id: tripID, name: "Impossible", durationNights: Int.max, laundryAccess: .unavailable)
+        let hugeBase = KitItem(id: itemID, name: "Bolts", baseQuantity: Int.max)
+
+        let r1 = engine.recommend(for: item, on: hugeTrip)
+        #expect(r1.quantity == Int.max)
+        #expect(r1.confidence == .lowConfidence(reason: RecommendationReason.quantityOverflowSaturated.rawValue))
+
+        let r2 = engine.recommend(for: hugeBase, on: Trip(id: tripID, name: "One night", durationNights: 1, laundryAccess: .unavailable))
+        #expect(r2.quantity == Int.max)
+        #expect(String(describing: r2.confidence).contains(RecommendationReason.quantityOverflowSaturated.rawValue))
+
+        // Int.max nights with laundry available still caps at one cycle without trapping.
+        let r3 = engine.recommend(for: item, on: Trip(id: tripID, name: "Capped", durationNights: Int.max, laundryAccess: .available))
+        #expect(r3.quantity == 7)
+        #expect(r3.reason == .laundryCycleCap)
+    }
 }
 
 @Suite("Versioned Codable models")
@@ -165,7 +184,7 @@ struct CodableModelTests {
             toStatus: .packed,
             occurredAt: fixedDate
         )
-        let dataset = PackDeckDataset(
+        let dataset = try PackDeckDataset(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000006")!,
             kits: [kit],
             trips: [trip],
@@ -183,6 +202,38 @@ struct CodableModelTests {
         #expect(decoded.tripItems.first?.schemaVersion == .current)
         #expect(decoded.transitions.first?.schemaVersion == .current)
     }
+
+    @Test("dataset rejects inconsistent histories and exposes transitions append-only")
+    func datasetTransitionContract() throws {
+        let fabricated = PackTransition(
+            tripItemID: itemID,
+            fromStatus: .packed,
+            toStatus: .omitted,
+            occurredAt: fixedDate
+        )
+        #expect(throws: PackLedgerError.inconsistentHistory) {
+            _ = try PackDeckDataset(transitions: [fabricated])
+        }
+
+        // Legal appends flow through recordTransition and stay replay-valid.
+        var dataset = try PackDeckDataset()
+        let t1 = try dataset.recordTransition(tripItemID: itemID, to: .packed, at: fixedDate)
+        let t2 = try dataset.recordTransition(tripItemID: itemID, to: .missing, at: fixedDate)
+        #expect(t1.fromStatus == .planned)
+        #expect(t2.fromStatus == .packed)
+        #expect(dataset.transitions.count == 2)
+
+        // Duplicate append rejected, history unchanged.
+        #expect(throws: PackLedgerError.alreadyInStatus(.missing)) {
+            try dataset.recordTransition(tripItemID: itemID, to: .missing, at: fixedDate)
+        }
+        #expect(dataset.transitions.count == 2)
+
+        // Round-trip revalidates.
+        let data = try JSONEncoder().encode(dataset)
+        let decoded = try JSONDecoder().decode(PackDeckDataset.self, from: data)
+        #expect(decoded == dataset)
+    }
 }
 
 @Suite("Append-only packing ledger")
@@ -195,11 +246,11 @@ struct PackLedgerTests {
     )
 
     @Test("status changes append events and retain prior events")
-    func recordsHistory() {
-        var ledger = PackLedger()
+    func recordsHistory() throws {
+        var ledger = try PackLedger()
 
-        let first = ledger.record(tripItemID: itemID, to: .packed, at: fixedDate)
-        let second = ledger.record(
+        let first = try ledger.record(tripItemID: itemID, to: .packed, at: fixedDate)
+        let second = try ledger.record(
             tripItemID: itemID,
             to: .missing,
             at: fixedDate.addingTimeInterval(1)
@@ -216,7 +267,7 @@ struct PackLedgerTests {
     }
 
     @Test("summary derives current states without mutating history")
-    func summary() {
+    func summary() throws {
         let first = TripItem(
             id: itemID,
             tripID: tripID,
@@ -237,8 +288,8 @@ struct PackLedgerTests {
             recommendation: secondRecommendation,
             createdAt: fixedDate
         )
-        var ledger = PackLedger()
-        ledger.record(tripItemID: first.id, to: .packed, at: fixedDate)
+        var ledger = try PackLedger()
+        try ledger.record(tripItemID: first.id, to: .packed, at: fixedDate)
 
         let summary = ledger.summary(for: tripID, items: [first, second])
 
@@ -249,6 +300,59 @@ struct PackLedgerTests {
         #expect(summary.omitted == 0)
         #expect(summary.completionRatio == 0.5)
         #expect(ledger.transitions.count == 1)
+    }
+
+    @Test("duplicate and reverting transitions are rejected without touching history")
+    func rejectsInvalidTransitions() throws {
+        var ledger = try PackLedger()
+        try ledger.record(tripItemID: itemID, to: .packed, at: fixedDate)
+
+        // planned -> planned on a fresh item: no state movement.
+        #expect(throws: PackLedgerError.alreadyInStatus(.planned)) {
+            try ledger.record(tripItemID: secondItemID, to: .planned, at: fixedDate)
+        }
+        // packed -> packed: duplicate.
+        #expect(throws: PackLedgerError.alreadyInStatus(.packed)) {
+            try ledger.record(tripItemID: itemID, to: .packed, at: fixedDate)
+        }
+        // packed -> planned: planned is never a target status.
+        #expect(throws: PackLedgerError.cannotRevertToPlanned) {
+            try ledger.record(tripItemID: itemID, to: .planned, at: fixedDate)
+        }
+        // Rejections must not append anything.
+        #expect(ledger.transitions.count == 1)
+    }
+
+    @Test("inconsistent hand-built or decoded history is rejected")
+    func rejectsInconsistentHistory() throws {
+        let fabricated = PackTransition(
+            tripItemID: itemID,
+            fromStatus: .packed,   // lie: nothing produced a packed event
+            toStatus: .missing,
+            occurredAt: fixedDate
+        )
+        #expect(throws: PackLedgerError.inconsistentHistory) {
+            _ = try PackLedger(transitions: [fabricated])
+        }
+
+        // A tampered persisted ledger JSON fails at decode time.
+        let valid = PackTransition(
+            tripItemID: itemID,
+            fromStatus: .planned,
+            toStatus: .packed,
+            occurredAt: fixedDate
+        )
+        let tampered = PackTransition(
+            id: valid.id,
+            tripItemID: valid.tripItemID,
+            fromStatus: .omitted,   // tamper the persisted fromStatus
+            toStatus: valid.toStatus,
+            occurredAt: valid.occurredAt
+        )
+        let data = try JSONEncoder().encode(PackLedger.unchecked(transitions: [tampered]))
+        #expect(throws: PackLedgerError.inconsistentHistory) {
+            _ = try JSONDecoder().decode(PackLedger.self, from: data)
+        }
     }
 }
 

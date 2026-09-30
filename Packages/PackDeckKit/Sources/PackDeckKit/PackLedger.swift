@@ -1,26 +1,102 @@
 import Foundation
 
+/// Rejections raised when a requested transition is inconsistent with the
+/// ledger's append-only state machine.
+public enum PackLedgerError: Error, Codable, Hashable, Sendable {
+    /// The item already has this status — recording would duplicate state.
+    case alreadyInStatus(ItemStatus)
+    /// `planned` is the initial state and is never a target status; a
+    /// re-planning flow must create a new `TripItem` instead.
+    case cannotRevertToPlanned
+    /// The transition is not permitted by the packing state machine.
+    case invalidTransition(from: ItemStatus, to: ItemStatus)
+    /// A decoded event history contradicts the state machine and cannot be
+    /// replayed.
+    case inconsistentHistory
+}
+
 /// Append-only transition ledger for trip-item packing state.
 ///
-/// Clients can only append transitions. Current state and summaries are derived
-/// views over immutable events.
+/// Clients can only append *valid* transitions; every append is validated
+/// against the item's derived current status. Current state and summaries
+/// are derived views over immutable events.
 public struct PackLedger: Codable, Hashable, Sendable {
     public private(set) var transitions: [PackTransition]
 
-    public init(transitions: [PackTransition] = []) {
+    /// Legal transitions from each status. `planned` is reachable from no
+    /// status — it exists only as the implicit initial state.
+    static let allowedTransitions: [ItemStatus: Set<ItemStatus>] = [
+        .planned: [.packed, .missing, .omitted],
+        .packed: [.missing, .omitted],
+        .missing: [.packed, .omitted],
+        .omitted: [.packed, .missing],
+    ]
+
+    /// Validates each event against the replayed state machine before
+    /// accepting the history (throws `PackLedgerError.inconsistentHistory`
+    /// for decoded or hand-built histories that could not have been
+    /// produced by `record`). Use `unchecked(transitions:)` for lossless
+    /// dataset round-trips.
+    public init(transitions: [PackTransition] = []) throws {
+        var replayed: [UUID: ItemStatus] = [:]
+        for event in transitions {
+            let from = replayed[event.tripItemID] ?? .planned
+            guard event.fromStatus == from,
+                  Self.allowedTransitions[from, default: []].contains(event.toStatus)
+            else {
+                throw PackLedgerError.inconsistentHistory
+            }
+            replayed[event.tripItemID] = event.toStatus
+        }
+        self.transitions = transitions
+    }
+
+    /// Accepts a transition history without replay validation — reserved for
+    /// lossless Codable round-trips of previously verified datasets.
+    public static func unchecked(transitions: [PackTransition] = []) -> PackLedger {
+        PackLedger(unchecked: transitions)
+    }
+
+    private init(unchecked transitions: [PackTransition]) {
         // Preserve supplied event order exactly; timestamps are metadata and can tie.
         self.transitions = transitions
     }
 
+    /// Decoding replays the state machine, so a tampered persisted history
+    /// fails to decode rather than surfacing as a ledger that pretends the
+    /// inconsistent events are valid.
+    private enum CodingKeys: String, CodingKey {
+        case transitions
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(transitions: container.decode([PackTransition].self, forKey: .transitions))
+    }
+
+    /// Validates and appends one transition. The derived current status of
+    /// the item is the source of truth for `fromStatus`; requests that do
+    /// not move the item to a different, legal status are rejected without
+    /// touching history.
     @discardableResult
     public mutating func record(
         tripItemID: UUID,
         to status: ItemStatus,
         at occurredAt: Date = Date()
-    ) -> PackTransition {
+    ) throws -> PackTransition {
+        let from = currentStatus(for: tripItemID)
+        guard from != status else {
+            throw PackLedgerError.alreadyInStatus(status)
+        }
+        guard status != .planned else {
+            throw PackLedgerError.cannotRevertToPlanned
+        }
+        guard Self.allowedTransitions[from, default: []].contains(status) else {
+            throw PackLedgerError.invalidTransition(from: from, to: status)
+        }
         let transition = PackTransition(
             tripItemID: tripItemID,
-            fromStatus: currentStatus(for: tripItemID),
+            fromStatus: from,
             toStatus: status,
             occurredAt: occurredAt
         )

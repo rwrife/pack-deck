@@ -139,6 +139,7 @@ public enum RecommendationReason: String, Codable, CaseIterable, Hashable, Senda
     case unknownDurationBaseQuantity = "unknown_duration_base_quantity"
     case invalidDurationBaseQuantity = "invalid_duration_base_quantity"
     case invalidBaseQuantityNormalized = "invalid_base_quantity_normalized"
+    case quantityOverflowSaturated = "quantity_overflow_saturated"
 }
 
 /// Deterministic output for one kit item. Identity is the source item's UUID.
@@ -267,13 +268,17 @@ public struct PackSummary: VersionedDomainModel {
 }
 
 /// Root payload for lossless domain encoding and future store backups.
+///
+/// `transitions` honors the same append-only contract as `PackLedger`:
+/// external code can only append state-machine-valid events via
+/// `recordTransition`; decoded histories are replay-validated.
 public struct PackDeckDataset: VersionedDomainModel {
     public let id: UUID
     public let schemaVersion: DomainSchemaVersion
     public var kits: [KitTemplate]
     public var trips: [Trip]
     public var tripItems: [TripItem]
-    public var transitions: [PackTransition]
+    public private(set) var transitions: [PackTransition]
 
     public init(
         id: UUID = UUID(),
@@ -282,12 +287,45 @@ public struct PackDeckDataset: VersionedDomainModel {
         trips: [Trip] = [],
         tripItems: [TripItem] = [],
         transitions: [PackTransition] = []
-    ) {
+    ) throws {
+        // Reuse the ledger replay so a hand-built dataset cannot carry an
+        // inconsistent event history either.
+        _ = try PackLedger(transitions: transitions)
         self.id = id
         self.schemaVersion = schemaVersion
         self.kits = kits
         self.trips = trips
         self.tripItems = tripItems
+        self.transitions = transitions
+    }
+
+    /// Appends one state-machine-valid transition for the given trip item.
+    @discardableResult
+    public mutating func recordTransition(
+        tripItemID: UUID,
+        to status: ItemStatus,
+        at occurredAt: Date = Date()
+    ) throws -> PackTransition {
+        var ledger = PackLedger.unchecked(transitions: transitions)
+        let transition = try ledger.record(tripItemID: tripItemID, to: status, at: occurredAt)
+        transitions = ledger.transitions
+        return transition
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, schemaVersion, kits, trips, tripItems, transitions
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.schemaVersion = try container.decode(DomainSchemaVersion.self, forKey: .schemaVersion)
+        self.kits = try container.decode([KitTemplate].self, forKey: .kits)
+        self.trips = try container.decode([Trip].self, forKey: .trips)
+        self.tripItems = try container.decode([TripItem].self, forKey: .tripItems)
+        // Replay-validate so tampered persisted transitions never decode.
+        let transitions = try container.decode([PackTransition].self, forKey: .transitions)
+        _ = try PackLedger(transitions: transitions)
         self.transitions = transitions
     }
 }
