@@ -118,25 +118,32 @@ jobs:
         timeout-minutes: 40
         run: |
           set -euo pipefail
-          # The macos-26 runner image no longer pre-installs the iOS
+          # The macos-26 runner image no longer pre-installs the iOS 26.0
           # simulator runtime for Xcode 26.0.1 (see actions/runner-images#13570
-          # mitigation). Without it, xcodebuild cannot resolve any
+          # mitigation). The image DOES carry newer runtimes (iOS 26.2/26.4/26.5),
+          # but the pinned Xcode 26.0.1 can only use a runtime of its own
+          # SDK version — without iOS 26.0, xcodebuild cannot resolve the
           # 'generic/platform=iOS Simulator' destination and exits 70.
           # This step installs the pinned Xcode's OWN platform component —
           # it is NOT a toolchain substitution: the exact Xcode
           # 26.0.1 (17A400) pin selected above remains in force.
-          if xcrun simctl list runtimes 2>/dev/null | grep -Eq 'iOS[ -][0-9]'; then
-            echo "iOS simulator runtime already present:"
-            xcrun simctl list runtimes | grep -E 'iOS[ -][0-9]' || true
+          SDK_VER=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-$(echo "$SDK_VER" | cut -d. -f1,2 | tr '.' '-')"
+          echo "Pinned iphonesimulator SDK: $SDK_VER — required runtime id: $RUNTIME_ID"
+          if xcrun simctl list runtimes 2>/dev/null | grep -q "$RUNTIME_ID"; then
+            echo "Required runtime already present:"
+            xcrun simctl list runtimes | grep "$RUNTIME_ID"
           else
-            echo "No iOS simulator runtime installed — downloading for the pinned Xcode (this can take several minutes)..."
+            echo "Required runtime missing — downloading platform for the pinned Xcode (this can take several minutes)..."
             xcrun simctl list > /dev/null 2>&1 || true   # warm the simulator service
-            if ! xcodebuild -downloadPlatform iOS -architectureVariant universal; then
-              echo "::error::ACCEPTANCE BLOCKER: iOS simulator platform runtime could not be installed on this runner."
+            xcodebuild -downloadPlatform iOS -architectureVariant universal || true
+            if ! xcrun simctl list runtimes | grep -q "$RUNTIME_ID"; then
+              echo "::error::ACCEPTANCE BLOCKER: iOS $SDK_VER simulator runtime could not be installed on this runner (Apple may no longer serve this platform build). Available runtimes:"
+              xcrun simctl list runtimes || true
               exit 1
             fi
-            echo "Runtime after download:"
-            xcrun simctl list runtimes | grep -E '^iOS'
+            echo "Runtime installed:"
+            xcrun simctl list runtimes | grep "$RUNTIME_ID"
           fi
 
       - name: Build for iphonesimulator
