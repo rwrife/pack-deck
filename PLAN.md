@@ -71,9 +71,9 @@ Primary surfaces:
 
 ### M2 — Domain engine
 
-- Implement kit/trip/item models.
-- Build deterministic recommendation engine with reason codes.
-- Add domain tests for quantity math and unknown-safe behavior.
+- [x] Implement kit/trip/item models.
+- [x] Build deterministic recommendation engine with reason codes.
+- [x] Add domain tests for quantity math and unknown-safe behavior.
 
 ### M3 — Persistence + migrations
 
