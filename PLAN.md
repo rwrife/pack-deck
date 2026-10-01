@@ -77,8 +77,8 @@ Primary surfaces:
 
 ### M3 — Persistence + migrations
 
-- Implement GRDB schema and repositories.
-- Add migration tests and backup codec tests.
+- [x] Implement GRDB schema and repositories.
+- [x] Add migration tests and backup codec tests.
 
 ### M4 — Core workflow UI
 

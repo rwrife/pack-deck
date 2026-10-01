@@ -21,6 +21,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Swift version
         run: swift --version
+      - name: Install SQLite development headers (GRDB)
+        # GRDB links the system SQLite via a C systemLibrary target;
+        # the stock swift image ships the runtime lib but not the dev
+        # headers. apt is cached by the runner's apt cache layer.
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends libsqlite3-dev
       - name: Run PackDeckKit package tests
         run: swift test --package-path Packages/PackDeckKit
       - name: Run PackDeckStore package tests
