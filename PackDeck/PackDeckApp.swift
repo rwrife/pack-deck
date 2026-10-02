@@ -1,6 +1,4 @@
 import SwiftUI
-import PackDeckKit
-import PackDeckStore
 
 /// Pack Deck app entry point.
 ///
@@ -10,9 +8,23 @@ import PackDeckStore
 /// package sources — CI enforces an empty-allowlist scan.
 @main
 struct PackDeckApp: App {
+    @State private var store: AppStore
+
+    init() {
+        _store = State(initialValue: Self.makeStore())
+    }
+
+    /// App entry always runs on the main thread, so the main-actor assertion
+    /// is honest; the nonisolated hop exists only because Swift 6 evaluates
+    /// property initializers in a nonisolated context.
+    nonisolated private static func makeStore() -> AppStore {
+        MainActor.assumeIsolated { AppStore() }
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(store)
         }
     }
 }
