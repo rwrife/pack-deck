@@ -112,6 +112,11 @@ struct KitEditorView: View {
                 Button("Cancel") {
                     dismiss()
                 }
+                // Enlarge the hosted bar-button layout box so its AX/hit
+                // frame measures ≥44pt (issue #4: every interactive control
+                // ≥44x44). contentShape makes the whole box tappable.
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
                 .accessibilityIdentifier("kit.cancel")
             }
             ToolbarItem(placement: .confirmationAction) {
@@ -119,6 +124,8 @@ struct KitEditorView: View {
                     save()
                 }
                 .disabled(!canSave)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
                 .accessibilityIdentifier("kit.save")
             }
             ToolbarItem(placement: .bottomBar) {
