@@ -135,6 +135,10 @@ struct KitEditorView: View {
                     } label: {
                         Label("Add Item", systemImage: "plus")
                     }
+                    // Same 44pt hit-target treatment as the bar buttons above
+                    // (issue #4): the plain bottom-bar glyph measured 33x36.
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
                     .accessibilityIdentifier("kit.item.add")
                     Spacer()
                     EditButton()

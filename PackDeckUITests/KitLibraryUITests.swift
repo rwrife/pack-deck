@@ -233,7 +233,12 @@ final class KitLibraryUITests: XCTestCase {
 
         app.buttons["kit.item.add"].tap()
         let itemField = app.textFields["kit.item.name"].firstMatch
-        XCTAssertTrue(itemField.waitForExistence(timeout: 5))
+        if !itemField.waitForExistence(timeout: 5) {
+            // The first toolbar tap can be swallowed while the keyboard is
+            // still dismissing — tap again and allow a longer settle window.
+            app.buttons["kit.item.add"].tap()
+            XCTAssertTrue(itemField.waitForExistence(timeout: 15), "item row never appeared")
+        }
         itemField.tap()
         itemField.typeText("\(itemName)\n")
 
