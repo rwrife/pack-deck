@@ -83,8 +83,8 @@ Current build shape is a standard native iPhone app. Native iPad support is disa
 - ✅ README/PLAN/toolchain scaffold committed.
 - ✅ M1: Native Swift project skeleton (`PackDeck.xcodeproj`, `PackDeckKit`, `PackDeckStore`) + iPhone-only + toolchain pin + zero-network + native-only CI policy gates (issue #1).
 - ✅ M2: Domain model, kit/trip models, and deterministic recommendation engine (issue #2).
-- 🔜 M3: PackDeckStore persistence — GRDB schema, migrations, versioned backup (issue #3).
-- 🔜 M4: Kit library UI — create, edit, and reuse packing kit templates (issue #4).
+- ✅ M3: PackDeckStore persistence — GRDB schema, migrations, versioned backup (issue #3).
+- ✅ M4: Kit library UI — create, edit, and reuse packing kit templates (issue #4).
 - 🔜 M5: Trip builder and packing workspace UI (issue #5).
 - 🔜 M6: Export/import — JSON backup and CSV checklist export (issue #6).
 - 🔜 M7: Accessibility and interaction QA pass (issue #7).

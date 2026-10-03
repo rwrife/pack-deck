@@ -1,27 +1,17 @@
 import SwiftUI
-import PackDeckKit
-import PackDeckStore
 
-/// Skeleton root view. The kit-library vertical slice (issue #4) replaces
-/// this; the real UI is routed through `PackWorkspaceLayout` (issue #5).
+/// Root navigation surface. The kit library (issue #4) is the first slice;
+/// trip building and the packing workspace (`PackWorkspaceLayout`, issue #5)
+/// hang off this stack in later milestones.
 struct ContentView: View {
     var body: some View {
-        VStack(spacing: 8) {
-            Text("Pack Deck")
-                .font(.title)
-                .accessibilityAddTraits(.isHeader)
-            Text(PackDeckKit.milestone)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Text(PackDeckStore.milestone)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        NavigationStack {
+            KitLibraryView()
         }
-        .padding()
-        .accessibilityElement(children: .combine)
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AppStore())
 }

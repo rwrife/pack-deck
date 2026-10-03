@@ -5,12 +5,13 @@
 # package must never use network APIs. The allowlist is intentionally
 # EMPTY — any match in scanned sources fails the build.
 #
-# Scanned roots: PackDeck/ (app sources) and Packages/*/Sources/.
+# Scanned roots: PackDeck/ (app sources), PackDeckUITests/ (test sources),
+# and Packages/*/Sources/.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-ROOTS=("PackDeck" "Packages")
+ROOTS=("PackDeck" "PackDeckUITests" "Packages")
 ALLOWLIST=()   # empty by design; extend only with explicit user sign-off
 
 PATTERNS=(

@@ -184,3 +184,66 @@ jobs:
           [ -f "$APP/PrivacyInfo.xcprivacy" ] \
             || { echo "::error::PrivacyInfo.xcprivacy not embedded in app bundle"; exit 1; }
           echo "Privacy manifest embedded: PASS"
+
+      - name: Run kit-library UI tests (XCUITest)
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          # Deterministic simulator: create a throwaway device pinned to the
+          # exact runtime of the selected Xcode (installed by the prior step),
+          # run the UI test target, then delete it. Avoids host-pool
+          # pre-installed-device drift. tee'd ui-tests.log is uploaded below.
+          SDK_VER=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-$(echo "$SDK_VER" | cut -d. -f1,2 | tr '.' '-')"
+          # Pick the device type from the pinned runtime's own supported list
+          # (authoritative), preferring a modern iPhone if present.
+          DEVICE_ID=$(xcrun simctl list runtimes -j | python3 -c '
+          import json, sys
+          runtime = sys.argv[1]
+          data = json.load(sys.stdin)
+          match = next((r for r in data["runtimes"] if r["identifier"] == runtime), None)
+          if match is None:
+              sys.exit("runtime " + runtime + " not present in simctl list")
+          iphones = [
+              d for d in match.get("supportedDeviceTypes", [])
+              if d.get("name", "").startswith("iPhone")
+          ]
+          if not iphones:
+              sys.exit("runtime " + runtime + " supports no iPhone device types")
+          # simctl lists device types oldest-first; prefer the newest non-SE.
+          modern = [d for d in iphones if "SE" not in d["name"]]
+          print((modern or iphones)[-1]["identifier"])
+          ' "$RUNTIME_ID")
+          echo "Device type: $DEVICE_ID (runtime $RUNTIME_ID)"
+          UDID=$(xcrun simctl create packdeck-uitest "$DEVICE_ID" "$RUNTIME_ID")
+          # Invoked via `trap cleanup EXIT` below — shellcheck cannot trace it.
+          # shellcheck disable=SC2329
+          cleanup() {
+            xcrun simctl shutdown "$UDID" 2>/dev/null || true
+            xcrun simctl delete "$UDID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          set +e
+          xcodebuild test \
+            -project PackDeck.xcodeproj \
+            -scheme PackDeck \
+            -destination "id=$UDID" \
+            -only-testing:PackDeckUITests \
+            -resultBundlePath UITestResults.xcresult \
+            -derivedDataPath DerivedDataTest \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee ui-tests.log
+          TEST_EXIT=${PIPESTATUS[0]}
+          set -e
+          exit "$TEST_EXIT"
+
+      - name: Upload UI test results (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uitest-results-${{ github.run_attempt }}
+          path: |
+            UITestResults.xcresult
+            ui-tests.log
+          if-no-files-found: ignore
+          retention-days: 7
