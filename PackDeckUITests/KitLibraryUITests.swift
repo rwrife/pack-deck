@@ -209,7 +209,7 @@ final class KitLibraryUITests: XCTestCase {
     }
 
     private func assertMinHitTarget(_ element: XCUIElement, name: String, file: StaticString = #filePath, line: UInt = #line) {
-        let frame = element.frame(in: .application)
+        let frame = element.frame
         XCTAssertTrue(
             frame.width >= 43.5 && frame.height >= 43.5,
             "\(name) hit target too small: \(frame.width)x\(frame.height)",
@@ -240,9 +240,20 @@ final class KitLibraryUITests: XCTestCase {
         if quantityTaps > 0 {
             let stepper = app.steppers["kit.item.quantity"].firstMatch
             XCTAssertTrue(stepper.waitForExistence(timeout: 5))
+            // SwiftUI Stepper exposes two child buttons (decrement, increment);
+            // XCUIElement has no increment() — tap the plus button directly.
+            let incrementButton = stepper.buttons.element(boundBy: 1)
             for _ in 0..<quantityTaps {
-                stepper.increment()
+                incrementButton.tap()
             }
+            // Prove the taps landed before continuing: label mirrors quantity.
+            let expected = 1 + quantityTaps
+            let deadline = Date().addingTimeInterval(5)
+            while !stepper.label.contains("Quantity: \(expected)"), Date() < deadline {}
+            XCTAssertTrue(
+                stepper.label.contains("Quantity: \(expected)"),
+                "quantity did not reach \(expected) after \(quantityTaps) increments (label: \(stepper.label))"
+            )
         }
 
         if !category.isEmpty {
