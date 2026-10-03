@@ -265,6 +265,9 @@ private struct ItemRow: View {
                         .frame(minWidth: 44, minHeight: 44)
                 }
                 .controlSize(.large)
+                // The AX/hit box of the stepper container measured 161x32;
+                // enlarge the layout height so it clears 44pt (issue #4).
+                .frame(minHeight: 44)
                 .accessibilityIdentifier("kit.item.quantity")
                 .accessibilityLabel("Quantity: \(item.quantity)")
 
