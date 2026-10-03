@@ -72,6 +72,9 @@ struct KitLibraryView: View {
                 Label("New Kit", systemImage: "plus")
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            // Hit-target contract (issue #4): ≥44pt touch height.
+            .frame(minHeight: 44)
             .accessibilityIdentifier("kit.add.empty")
         }
     }
