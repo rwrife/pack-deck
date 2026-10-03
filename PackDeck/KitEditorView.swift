@@ -245,6 +245,51 @@ struct KitEditorView: View {
     }
 }
 
+/// Custom quantity stepper: two 44pt buttons around a quantity readout.
+///
+/// SwiftUI's built-in `Stepper` hosts a UIKit control whose AX/hit frame
+/// stays at ~32pt regardless of SwiftUI layout modifiers (measured 161x32
+/// twice on CI), so the 44x44pt hit-target contract (issue #4) requires
+/// first-party buttons. Identifiers live on the leaf controls only —
+/// container-level identifiers cascade over child identifiers in the AX
+/// hierarchy, which would make the buttons unreachable to XCUITest.
+private struct QuantityStepper: View {
+    @Binding var quantity: Int
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                quantity = max(1, quantity - 1)
+            } label: {
+                Image(systemName: "minus")
+            }
+            .buttonStyle(.bordered)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .accessibilityIdentifier("kit.item.decrement")
+            .accessibilityLabel("Decrease quantity")
+            .disabled(quantity <= 1)
+
+            Text("Qty: \(quantity)")
+                .monospacedDigit()
+                .frame(minWidth: 44)
+                .accessibilityIdentifier("kit.item.quantity")
+
+            Button {
+                quantity = min(99, quantity + 1)
+            } label: {
+                Image(systemName: "plus")
+            }
+            .buttonStyle(.bordered)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .accessibilityIdentifier("kit.item.increment")
+            .accessibilityLabel("Increase quantity")
+            .disabled(quantity >= 99)
+        }
+    }
+}
+
 /// One editable item row: name, quantity stepper, optional category.
 private struct ItemRow: View {
     @Binding var item: EditableItem
@@ -260,16 +305,7 @@ private struct ItemRow: View {
                 .accessibilityLabel("Item name")
 
             HStack(spacing: 12) {
-                Stepper(value: $item.quantity, in: 1...99) {
-                    Text("Qty: \(item.quantity)")
-                        .frame(minWidth: 44, minHeight: 44)
-                }
-                .controlSize(.large)
-                // The AX/hit box of the stepper container measured 161x32;
-                // enlarge the layout height so it clears 44pt (issue #4).
-                .frame(minHeight: 44)
-                .accessibilityIdentifier("kit.item.quantity")
-                .accessibilityLabel("Quantity: \(item.quantity)")
+                QuantityStepper(quantity: $item.quantity)
 
                 TextField("Category", text: $item.category)
                     .textFieldStyle(.roundedBorder)

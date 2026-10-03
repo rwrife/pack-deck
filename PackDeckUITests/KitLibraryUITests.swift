@@ -63,9 +63,8 @@ final class KitLibraryUITests: XCTestCase {
         XCTAssertEqual(categoryField.value as? String, "electronics")
 
         // Quantity survived the round trip (1 base + 2 increments = 3).
-        let qtyProbe = app.descendants(matching: .any)
-            .matching(identifier: "kit.item.quantity").firstMatch
-        XCTAssertTrue(qtyProbe.waitForExistence(timeout: 5), "quantity stepper missing")
+        let qtyProbe = app.staticTexts["kit.item.quantity"]
+        XCTAssertTrue(qtyProbe.waitForExistence(timeout: 5), "quantity readout missing")
         XCTAssertTrue(
             qtyProbe.label.contains("3"),
             "quantity not persisted (label: \(qtyProbe.label), value: \(String(describing: qtyProbe.value)))"
@@ -178,9 +177,10 @@ final class KitLibraryUITests: XCTestCase {
         assertMinHitTarget(app.buttons["kit.item.add"], name: "kit.item.add")
 
         app.buttons["kit.item.add"].tap()
-        let stepper = app.steppers["kit.item.quantity"].firstMatch
-        XCTAssertTrue(stepper.waitForExistence(timeout: 5))
-        assertMinHitTarget(stepper, name: "kit.item.quantity")
+        let increment = app.buttons["kit.item.increment"]
+        XCTAssertTrue(increment.waitForExistence(timeout: 5), "quantity increment missing")
+        assertMinHitTarget(increment, name: "kit.item.increment")
+        assertMinHitTarget(app.buttons["kit.item.decrement"], name: "kit.item.decrement")
     }
 
     /// Dynamic Type contract: at AX5 (Accessibility Extra Extra Extra Large)
@@ -243,21 +243,19 @@ final class KitLibraryUITests: XCTestCase {
         itemField.typeText("\(itemName)\n")
 
         if quantityTaps > 0 {
-            let stepper = app.steppers["kit.item.quantity"].firstMatch
-            XCTAssertTrue(stepper.waitForExistence(timeout: 5))
-            // SwiftUI Stepper exposes two child buttons (decrement, increment);
-            // XCUIElement has no increment() — tap the plus button directly.
-            let incrementButton = stepper.buttons.element(boundBy: 1)
+            let incrementButton = app.buttons["kit.item.increment"].firstMatch
+            XCTAssertTrue(incrementButton.waitForExistence(timeout: 5), "quantity increment missing")
             for _ in 0..<quantityTaps {
                 incrementButton.tap()
             }
-            // Prove the taps landed before continuing: label mirrors quantity.
+            // Prove the taps landed before continuing: the readout mirrors quantity.
             let expected = 1 + quantityTaps
+            let readout = app.staticTexts["kit.item.quantity"].firstMatch
             let deadline = Date().addingTimeInterval(5)
-            while !stepper.label.contains("Quantity: \(expected)"), Date() < deadline {}
+            while !readout.label.contains("\(expected)"), Date() < deadline {}
             XCTAssertTrue(
-                stepper.label.contains("Quantity: \(expected)"),
-                "quantity did not reach \(expected) after \(quantityTaps) increments (label: \(stepper.label))"
+                readout.label.contains("\(expected)"),
+                "quantity did not reach \(expected) after \(quantityTaps) increments (label: \(readout.label))"
             )
         }
 
