@@ -17,6 +17,54 @@ final class AppStore {
 
     /// Reactive mirror of the persisted kit list.
     private(set) var kits: [KitTemplate] = []
+    private(set) var trips: [Trip] = []
+    private(set) var tripItems: [TripItem] = []
+    private(set) var transitions: [PackTransition] = []
+
+    func status(for item: TripItem) -> ItemStatus {
+        transitions.last(where: { $0.tripItemID == item.id })?.toStatus ?? .planned
+    }
+
+    func summary(for trip: Trip) -> PackSummary? {
+        // Derive from observed mirrors, not a fresh database read: SwiftUI
+        // otherwise sees no dependency on transitions and leaves the progress
+        // label stale even while item status/Undo update correctly.
+        (try? PackLedger(transitions: transitions))?.summary(for: trip.id, items: tripItems)
+    }
+
+    @discardableResult
+    func createTrip(name: String, nights: Int?, laundry: LaundryAccess,
+                    tags: [String], kits: [KitTemplate], adHoc: [AdHocItem]) -> Trip? {
+        do {
+            let plan = try TripPlanner().plan(name: name, durationNights: nights,
+                                              laundryAccess: laundry, activityTags: tags,
+                                              kits: kits, adHocItems: adHoc)
+            try store.createTrip(plan.trip, items: plan.items)
+            reload()
+            return plan.trip
+        } catch {
+            lastError = "Could not create trip: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    func setStatus(_ status: ItemStatus, for item: TripItem) {
+        do {
+            try store.recordTransition(tripItemID: item.id, to: status)
+            reload()
+        } catch {
+            lastError = "Could not change status: \(error.localizedDescription)"
+        }
+    }
+
+    func undo(for item: TripItem) {
+        do {
+            try store.undoTransition(tripItemID: item.id)
+            reload()
+        } catch {
+            lastError = "Could not undo: \(error.localizedDescription)"
+        }
+    }
 
     /// Last user-facing failure message; views surface it in an alert and
     /// clear it on dismissal. Persistence failures must never crash the app
@@ -82,7 +130,11 @@ final class AppStore {
     /// Refreshes the kit mirror from a single consistent snapshot.
     func reload() {
         do {
-            kits = try store.snapshot().kits
+            let snapshot = try store.snapshot()
+            kits = snapshot.kits
+            trips = snapshot.trips
+            tripItems = snapshot.tripItems
+            transitions = snapshot.transitions
             lastError = nil
         } catch {
             lastError = "Could not read your kits: \(error.localizedDescription)"

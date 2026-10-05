@@ -1,17 +1,16 @@
 import SwiftUI
 
-/// Root navigation surface. The kit library (issue #4) is the first slice;
-/// trip building and the packing workspace (`PackWorkspaceLayout`, issue #5)
-/// hang off this stack in later milestones.
 struct ContentView: View {
     var body: some View {
-        NavigationStack {
-            KitLibraryView()
+        TabView {
+            NavigationStack { KitLibraryView() }
+                .tabItem { Label("Kits", systemImage: "bag") }
+            NavigationStack { TripListView() }
+                .tabItem { Label("Trips", systemImage: "suitcase") }
         }
     }
 }
 
 #Preview {
-    ContentView()
-        .environment(AppStore())
+    ContentView().environment(AppStore())
 }

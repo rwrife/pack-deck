@@ -23,13 +23,14 @@ public enum PackLedgerError: Error, Codable, Hashable, Sendable {
 public struct PackLedger: Codable, Hashable, Sendable {
     public private(set) var transitions: [PackTransition]
 
-    /// Legal transitions from each status. `planned` is reachable from no
-    /// status — it exists only as the implicit initial state.
+    /// Legal event transitions. Ordinary `record` disallows `.planned` as a
+    /// target; an explicit undo appends the inverse event, which may return
+    /// an item to its initial planned state. Replay accepts those events.
     static let allowedTransitions: [ItemStatus: Set<ItemStatus>] = [
         .planned: [.packed, .missing, .omitted],
-        .packed: [.missing, .omitted],
-        .missing: [.packed, .omitted],
-        .omitted: [.packed, .missing],
+        .packed: [.planned, .missing, .omitted],
+        .missing: [.planned, .packed, .omitted],
+        .omitted: [.planned, .packed, .missing],
     ]
 
     /// Validates each event against the replayed state machine before
@@ -104,6 +105,19 @@ public struct PackLedger: Codable, Hashable, Sendable {
         )
         transitions.append(transition)
         return transition
+    }
+
+    /// Appends an inverse event without deleting the previous action.
+    /// `record` still rejects direct reversion to planned; only undo may do so.
+    @discardableResult
+    public mutating func undo(tripItemID: UUID, at occurredAt: Date = Date()) throws -> PackTransition {
+        guard let last = transitions.last(where: { $0.tripItemID == tripItemID }) else {
+            throw PackLedgerError.alreadyInStatus(.planned)
+        }
+        let inverse = PackTransition(tripItemID: tripItemID, fromStatus: last.toStatus,
+                                     toStatus: last.fromStatus, occurredAt: occurredAt)
+        transitions.append(inverse)
+        return inverse
     }
 
     public func currentStatus(for tripItemID: UUID) -> ItemStatus {

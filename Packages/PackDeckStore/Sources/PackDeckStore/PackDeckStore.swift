@@ -160,6 +160,21 @@ public final class PackDeckStore: @unchecked Sendable {
     }
 
     // MARK: - Trips
+    /// Persists a trip and all its copied items atomically.
+    public func createTrip(_ trip: Trip, items: [TripItem]) throws {
+        guard !items.isEmpty,
+              Set(items.map(\.id)).count == items.count,
+              items.allSatisfy({ $0.tripID == trip.id && $0.recommendation.id == $0.id }) else {
+            throw PackDeckStoreError.corruptRow(column: "trip_items", detail: "invalid trip plan")
+        }
+        try db.write { writer in
+            guard try !Self.tripExists(writer, id: trip.id) else {
+                throw PackDeckStoreError.corruptRow(column: "trips.id", detail: "trip already exists")
+            }
+            try Self.insertTrip(writer, trip)
+            for item in items { try Self.insertTripItem(writer, item) }
+        }
+    }
 
     public func saveTrip(_ trip: Trip) throws {
         try db.write { writer in
@@ -237,6 +252,21 @@ public final class PackDeckStore: @unchecked Sendable {
             let transition = try ledger.record(tripItemID: tripItemID, to: status, at: occurredAt)
             try Self.insertTransition(writer, transition)
             return transition
+        }
+    }
+
+    /// Undo an item-specific action by appending an inverse ledger event.
+    @discardableResult
+    public func undoTransition(tripItemID: UUID) throws -> PackTransition {
+        try db.write { writer in
+            guard try Row.fetchOne(writer, sql: "SELECT 1 FROM trip_items WHERE id = ?",
+                                   arguments: [tripItemID.uuidString]) != nil else {
+                throw PackDeckStoreError.tripItemNotFound(tripItemID)
+            }
+            var ledger = try PackLedger(transitions: Self.readTransitions(writer))
+            let inverse = try ledger.undo(tripItemID: tripItemID)
+            try Self.insertTransition(writer, inverse)
+            return inverse
         }
     }
 
