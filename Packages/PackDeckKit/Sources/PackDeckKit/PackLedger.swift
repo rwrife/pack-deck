@@ -27,9 +27,9 @@ public struct PackLedger: Codable, Hashable, Sendable {
     /// status — it exists only as the implicit initial state.
     static let allowedTransitions: [ItemStatus: Set<ItemStatus>] = [
         .planned: [.packed, .missing, .omitted],
-        .packed: [.missing, .omitted],
-        .missing: [.packed, .omitted],
-        .omitted: [.packed, .missing],
+        .packed: [.planned, .missing, .omitted],
+        .missing: [.planned, .packed, .omitted],
+        .omitted: [.planned, .packed, .missing],
     ]
 
     /// Validates each event against the replayed state machine before
@@ -104,6 +104,19 @@ public struct PackLedger: Codable, Hashable, Sendable {
         )
         transitions.append(transition)
         return transition
+    }
+
+    /// Appends an inverse event without deleting the previous action.
+    /// `record` still rejects direct reversion to planned; only undo may do so.
+    @discardableResult
+    public mutating func undo(tripItemID: UUID, at occurredAt: Date = Date()) throws -> PackTransition {
+        guard let last = transitions.last(where: { $0.tripItemID == tripItemID }) else {
+            throw PackLedgerError.alreadyInStatus(.planned)
+        }
+        let inverse = PackTransition(tripItemID: tripItemID, fromStatus: last.toStatus,
+                                     toStatus: last.fromStatus, occurredAt: occurredAt)
+        transitions.append(inverse)
+        return inverse
     }
 
     public func currentStatus(for tripItemID: UUID) -> ItemStatus {
