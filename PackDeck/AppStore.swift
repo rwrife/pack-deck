@@ -26,7 +26,10 @@ final class AppStore {
     }
 
     func summary(for trip: Trip) -> PackSummary? {
-        try? store.snapshot().summary(for: trip.id)
+        // Derive from observed mirrors, not a fresh database read: SwiftUI
+        // otherwise sees no dependency on transitions and leaves the progress
+        // label stale even while item status/Undo update correctly.
+        (try? PackLedger(transitions: transitions))?.summary(for: trip.id, items: tripItems)
     }
 
     @discardableResult

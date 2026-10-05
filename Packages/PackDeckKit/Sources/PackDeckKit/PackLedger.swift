@@ -23,8 +23,9 @@ public enum PackLedgerError: Error, Codable, Hashable, Sendable {
 public struct PackLedger: Codable, Hashable, Sendable {
     public private(set) var transitions: [PackTransition]
 
-    /// Legal transitions from each status. `planned` is reachable from no
-    /// status — it exists only as the implicit initial state.
+    /// Legal event transitions. Ordinary `record` disallows `.planned` as a
+    /// target; an explicit undo appends the inverse event, which may return
+    /// an item to its initial planned state. Replay accepts those events.
     static let allowedTransitions: [ItemStatus: Set<ItemStatus>] = [
         .planned: [.packed, .missing, .omitted],
         .packed: [.planned, .missing, .omitted],
