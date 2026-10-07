@@ -174,4 +174,28 @@ final class AppStore {
     func tripsReferencing(kitID: UUID) -> [Trip] {
         (try? store.tripsReferencing(kitID: kitID)) ?? []
     }
+
+    // MARK: - Backup / export (issue #6, zero network by construction)
+
+    /// Versioned JSON backup of the entire local dataset.
+    func backupJSON() throws -> Data {
+        try BackupCodec.encode(store.snapshot())
+    }
+
+    /// CSV checklist of every trip item with its current status.
+    func checklistCSV() throws -> Data {
+        ChecklistCSV.encode(try store.snapshot())
+    }
+
+    /// Validates a backup payload and summarizes it WITHOUT mutating anything,
+    /// so the UI can preview counts before the user confirms a replace.
+    func previewBackup(_ data: Data) throws -> BackupCodec.Preview {
+        try BackupCodec.preview(data)
+    }
+
+    /// Replaces the whole dataset from a (previewed) backup, transactionally.
+    func restoreBackup(_ data: Data) throws {
+        try BackupCodec.restore(data, into: store)
+        reload()
+    }
 }

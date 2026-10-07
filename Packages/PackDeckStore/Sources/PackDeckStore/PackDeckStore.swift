@@ -45,7 +45,7 @@ public final class PackDeckStore: @unchecked Sendable {
 
     /// Backup/interchange format version (independent of DB schema version;
     /// `BackupCodec` checks it on import).
-    public static let backupFormatVersion: Int = 1
+    public static let backupFormatVersion: Int = BackupCodec.currentFormatVersion
 
     /// App-container default database filename.
     public static let defaultDatabaseFilename = "packdeck.sqlite"

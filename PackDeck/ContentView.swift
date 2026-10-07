@@ -7,6 +7,9 @@ struct ContentView: View {
                 .tabItem { Label("Kits", systemImage: "bag") }
             NavigationStack { TripListView() }
                 .tabItem { Label("Trips", systemImage: "suitcase") }
+            NavigationStack { DataTransferView() }
+                .tabItem { Label("Data", systemImage: "arrow.triangle.2.circlepath") }
+                .accessibilityIdentifier("tab.data")
         }
     }
 }
