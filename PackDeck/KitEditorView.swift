@@ -85,7 +85,8 @@ struct KitEditorView: View {
                     .accessibilityIdentifier("kit.name")
                     .accessibilityLabel("Kit name")
                 TextField("Notes (optional)", text: $notes, axis: .vertical)
-                    .lineLimit(1...3)
+                    // No upper lineLimit: caps truncate notes at large
+                    // Dynamic Type sizes (issue #7 audit).
                     .focused($focusedField, equals: .notes)
                     .accessibilityIdentifier("kit.notes")
                     .accessibilityLabel("Kit notes")
@@ -293,6 +294,7 @@ private struct QuantityStepper: View {
 /// One editable item row: name, quantity stepper, optional category.
 private struct ItemRow: View {
     @Binding var item: EditableItem
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @FocusState.Binding var focusedField: KitEditorView.EditorFocus?
 
     var body: some View {
@@ -304,7 +306,12 @@ private struct ItemRow: View {
                 .accessibilityIdentifier("kit.item.name")
                 .accessibilityLabel("Item name")
 
-            HStack(spacing: 12) {
+            // At accessibility text sizes the horizontal row (stepper +
+            // category field) squeezes into truncation; stack it instead.
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                : AnyLayout(HStackLayout(spacing: 12))
+            layout {
                 QuantityStepper(quantity: $item.quantity)
 
                 TextField("Category", text: $item.category)
@@ -317,6 +324,7 @@ private struct ItemRow: View {
         }
         .padding(.vertical, 4)
     }
+
 }
 
 #Preview("New Kit") {

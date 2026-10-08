@@ -128,12 +128,12 @@ private struct KitRow: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(kit.name)
                 .font(.headline)
-                .lineLimit(1)
-            HStack(spacing: 6) {
-                Label("\(kit.items.count)", systemImage: "list.bullet")
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                Label("\(kit.items.count) items", systemImage: "list.bullet")
                 if let notes = kit.notes, !notes.isEmpty {
                     Text(notes)
-                        .lineLimit(1)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .font(.subheadline)
