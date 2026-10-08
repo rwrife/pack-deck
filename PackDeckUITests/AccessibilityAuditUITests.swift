@@ -29,6 +29,20 @@ final class AccessibilityAuditUITests: XCTestCase {
         add(tree)
     }
 
+    // Preserve every audit finding and identify its element before making
+    // fixes. A passing AX5 probe does not invalidate Apple's findings.
+    private func audit() throws {
+        try app.performAccessibilityAudit { issue in
+            let diagnostic = "Accessibility audit: \(issue.compactDescription); \(issue.detailedDescription); element: \(String(describing: issue.element?.debugDescription))"
+            let attachment = XCTAttachment(string: diagnostic)
+            attachment.name = "audit-finding"
+            attachment.lifetime = .keepAlways
+            self.add(attachment)
+            print(diagnostic)
+            return false  // Never waive findings silently.
+        }
+    }
+
     private func assertLargeTextIsActive() {
         let probe = app.staticTexts["accessibility.dynamicType"]
         XCTAssertTrue(probe.waitForExistence(timeout: 15), "Dynamic Type probe missing")
@@ -51,14 +65,14 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(reveal(kitRow), "kit row unreachable at AX5")
         XCTAssertTrue(kitRow.label.contains("Long weekend carry-on essentials"), kitRow.label)
         evidence("AX5-kit-library")
-        try app.performAccessibilityAudit()
+        try audit()
 
         kitRow.tap()
         XCTAssertTrue(app.textFields["kit.name"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.textFields["kit.name"].label, "Kit name")
         XCTAssertTrue(app.buttons["kit.save"].isHittable)
         evidence("AX5-kit-editor")
-        try app.performAccessibilityAudit()
+        try audit()
         app.buttons["kit.cancel"].tap()
 
         app.tabBars.buttons["Trips"].tap()
@@ -67,7 +81,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(reveal(tripRow), "trip row unreachable at AX5")
         XCTAssertTrue(tripRow.label.contains("Long weekend mountain trip"), tripRow.label)
         evidence("AX5-trip-list")
-        try app.performAccessibilityAudit()
+        try audit()
         tripRow.tap()
         let progress = app.staticTexts["workspace.progress"]
         XCTAssertTrue(progress.waitForExistence(timeout: 10))
@@ -77,13 +91,13 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(status.label.contains("Planned"), "status must not rely on color: \(status.label)")
         XCTAssertTrue(app.buttons["workspace.setStatus.Travel adapter"].isHittable)
         evidence("AX5-packing-workspace")
-        try app.performAccessibilityAudit()
+        try audit()
 
         app.tabBars.buttons["Data"].tap()
         XCTAssertTrue(app.buttons["transfer.exportJSON"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["transfer.importJSON"].isHittable)
         evidence("AX5-data-transfer")
-        try app.performAccessibilityAudit()
+        try audit()
     }
 
     func testStatusTextAndKeyboardFocusContract() throws {
@@ -99,7 +113,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         while app.keyboards.count > 0, Date() < keyboardDeadline { usleep(100_000) }
         XCTAssertEqual(app.keyboards.count, 0, "Return did not release keyboard focus")
         evidence("AX5-trip-builder")
-        try app.performAccessibilityAudit()
+        try audit()
         app.buttons["Cancel"].tap()
 
         let trip = app.descendants(matching: .any)

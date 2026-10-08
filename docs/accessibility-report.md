@@ -9,9 +9,24 @@ category before testing. It records screenshots and accessibility-tree text
 attachments in `UITestResults.xcresult`, then calls Apple's
 `performAccessibilityAudit()` without suppressing findings.
 
-**Status: native audit pending.** Linux syntax/package checks are not an iOS
-accessibility result. The exact-head macOS CI run must pass before this report
-can be marked verified. Xcode must remain 26.0.1 / 17A400 with iOS SDK 26.0.
+**Status: native audit failed; fixes remain unverified.** Run
+[37784207877](https://github.com/rwrife/pack-deck/actions/runs/37784207877)
+built successfully on the exact pin and verified the app's iPhone family and
+bundle ID. It executed 11 UI tests: 9 passed, 2 new audit tests failed:
+
+```
+Dynamic Type font sizes are partially unsupported
+Contrast failed
+Executed 11 tests, with 2 failures (0 unexpected)
+```
+
+The library audit stopped at the first finding; later primary-screen audits
+were not reached. The builder audit failed contrast after focus/Return
+assertions passed. Findings are not waived or attributed to runner flake.
+The follow-up records each audit issue's detailed description and element
+into xcresult attachments and logs, so repair can target the actual control.
+Linux syntax/package checks are not an iOS accessibility result. The exact-head
+macOS CI run must pass before this report can be marked verified. Xcode must remain 26.0.1 / 17A400 with iOS SDK 26.0.
 No device, signing, archive, or TestFlight evidence is claimed.
 
 ## Findings and fixes
