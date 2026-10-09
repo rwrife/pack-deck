@@ -2,10 +2,11 @@ import XCTest
 
 /// AX-contract audit: the simulator's accessibility tree, not a claim that
 /// VoiceOver speech or an external keyboard was physically exercised.
+@MainActor
 final class AccessibilityAuditUITests: XCTestCase {
     private var app: XCUIApplication!
 
-    override func setUp() {
+    private func launchApp() {
         continueAfterFailure = false
         let application = XCUIApplication()
         application.launchArguments = [
@@ -59,6 +60,7 @@ final class AccessibilityAuditUITests: XCTestCase {
     }
 
     func testLargestTextAndReadingOrderAcrossPrimaryScreens() throws {
+        launchApp()
         assertLargeTextIsActive()
         let kitRow = app.descendants(matching: .any)
             .matching(identifier: "kit.row.Long weekend carry-on essentials").firstMatch
@@ -101,6 +103,7 @@ final class AccessibilityAuditUITests: XCTestCase {
     }
 
     func testStatusTextAndKeyboardFocusContract() throws {
+        launchApp()
         assertLargeTextIsActive()
         app.tabBars.buttons["Trips"].tap()
         app.buttons["trip.add"].tap()
