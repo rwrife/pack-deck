@@ -88,6 +88,21 @@ final class AppStore {
         if ProcessInfo.processInfo.arguments.contains("--seed-reference-trip") {
             seedReferenceTrip()
         }
+        if ProcessInfo.processInfo.arguments.contains("--seed-accessibility-fixture") {
+            seedAccessibilityFixture()
+        }
+    }
+
+    /// Deterministic local-only fixture for accessibility journeys. Never
+    /// replaces user data; only the UI-test runner passes this argument.
+    private func seedAccessibilityFixture() {
+        guard !kits.contains(where: { $0.name == "Long weekend carry-on essentials" }) else { return }
+        let kit = KitTemplate(name: "Long weekend carry-on essentials",
+                              notes: "Charger, travel adapter, and daily medication",
+                              items: [KitItem(name: "Travel adapter", baseQuantity: 1)])
+        guard save(kit) else { return }
+        _ = createTrip(name: "Long weekend mountain trip", nights: 3,
+                       laundry: .unknown, tags: [], kits: [kit], adHoc: [])
     }
 
     /// XCUITest seam: `--seed-reference-trip` creates one trip whose

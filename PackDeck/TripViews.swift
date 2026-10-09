@@ -40,6 +40,8 @@ struct TripListView: View {
 struct TripBuilderView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @FocusState private var focusedField: String?
     @State private var name = ""
     @State private var nights = 1
     @State private var laundry: LaundryAccess = .unknown
@@ -52,7 +54,10 @@ struct TripBuilderView: View {
         Form {
             Section("Trip") {
                 TextField("Trip name", text: $name)
+                    .focused($focusedField, equals: "name")
+                    .onSubmit { focusedField = nil }
                     .accessibilityIdentifier("trip.name")
+                    .accessibilityLabel("Trip name")
                 Stepper("Nights: \(nights)", value: $nights, in: 1...365)
                     .accessibilityIdentifier("trip.nights")
                 Picker("Laundry", selection: $laundry) {
@@ -61,7 +66,10 @@ struct TripBuilderView: View {
                     Text("Unavailable").tag(LaundryAccess.unavailable)
                 }
                 TextField("Activity tags (comma separated)", text: $tags)
+                    .focused($focusedField, equals: "tags")
+                    .onSubmit { focusedField = nil }
                     .accessibilityIdentifier("trip.tags")
+                    .accessibilityLabel("Activity tags, comma separated")
             }
             Section("Kits") {
                 ForEach(store.kits) { kit in
@@ -75,9 +83,15 @@ struct TripBuilderView: View {
                 }
             }
             Section("Ad-hoc items") {
-                HStack {
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                    : AnyLayout(HStackLayout())
+                layout {
                     TextField("Item name", text: $adHocName)
+                        .focused($focusedField, equals: "adhoc")
+                        .onSubmit { focusedField = nil }
                         .accessibilityIdentifier("trip.adhoc.name")
+                        .accessibilityLabel("Ad-hoc item name")
                     Button("Add") {
                         adHocItems.append(AdHocItem(name: adHocName.trimmingCharacters(in: .whitespacesAndNewlines)))
                         adHocName = ""
