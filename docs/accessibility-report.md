@@ -33,11 +33,20 @@ SwiftUI.AccessibilityNode` with `element: nil`; the trip builder audit identifie
 `trip.create` (`Create`, Disabled) with the same contrast finding. The contrast
 audit stopped before the remaining screens. These are unresolved findings, not
 waived. The diagnostic attachments and full UI logs are retained in that run.
-The follow-up collects findings and defers failure to the end of each test so
-later screens can be reached and their audit issues recorded, then still fails
-on any finding. This follow-up has no native result yet.
-Linux syntax/package checks are not an iOS accessibility result. The exact-head
-macOS CI run must pass before this report can be marked verified. Xcode must remain 26.0.1 / 17A400 with iOS SDK 26.0.
+Run [37936642609 attempt 3](https://github.com/rwrife/pack-deck/actions/runs/37936642609) tested the exact PR head (`6d9c8485deeed785d861f0b597c172b0743b5a22`) on pinned Xcode 26.0.1 / 17A400 and SDK 26.0. The iOS simulator build passed; the built app asserted `UIDeviceFamily == [1]` and `com.infinityball.packdeck`. The UI suite ran 11 tests: 9 passed, 2 audit tests failed (exit 65). Unlike attempts 1–2 (simulator launch timeouts with no test cases), this attempt reached all primary screens and retained trees/screenshots and findings in [artifact `uitest-results-3`](https://github.com/rwrife/pack-deck/actions/runs/37936642609/artifacts/11702576885). Findings were not waived:
+
+| Screen | Reported audit findings |
+| --- | --- |
+| Kit library | Contrast (unresolved SwiftUI node), Dynamic Type on the test probe, text clipping (unresolved node) |
+| Kit editor | Contrast (unresolved SwiftUI node), Dynamic Type on `kit.edit`, `kit.cancel`, `kit.item.add`, `kit.save`, and the test probe; text clipping on `kit.item.add` and the long `kit.name` text field |
+| Trip list | Contrast (unresolved SwiftUI node), Dynamic Type on the test probe |
+| Packing workspace | Contrast (unresolved SwiftUI node), Dynamic Type on the test probe |
+| Data transfer | Contrast (unresolved SwiftUI node), Dynamic Type on the test probe, clipped `Import JSON Backup` label |
+| Trip builder | Dynamic Type on `Cancel` and disabled `trip.create`, clipped `trip.tags` placeholder, contrast on disabled `trip.create` |
+| Status/Undo journey | Dynamic Type on the test probe, contrast on the `Packing list` heading |
+
+The AX5 test probe is a fixed `.caption2` text under the tab bar; its audit finding does not establish a production-text scaling failure. The other findings are real audit reports and require targeted remediation and a fresh native run. An unresolved node is **not** assumed to be a false positive. Automated keyboard Return dismissal and the status/Undo journey passed their assertions, but those assertions do not satisfy manual input and VoiceOver acceptance.
+Linux syntax/package checks are not an iOS accessibility result. A green exact-head native audit and manual evidence are still required before this report can be marked verified; do not merge or close #7.
 No device, signing, archive, or TestFlight evidence is claimed.
 
 ## Findings and fixes
@@ -84,9 +93,9 @@ replace existing data.
 
 ## Acceptance checklist
 
-- [ ] Exact-head native audit and AX5 primary-screen journeys passed.
+- [ ] Exact-head native audit and AX5 primary-screen journeys passed (Run 37936642609 recorded 2 failures; findings table documented above).
 - [ ] Recorded accessibility-tree/audit findings reviewed for logical order.
-- [x] Status semantics are text, not color alone (source; native assertions pending).
+- [x] Status semantics are text, not color alone (source; native assertions passed).
 - [x] Reduce Motion transaction guard implemented (source; manual check pending).
 - [ ] Manual VoiceOver/external keyboard/Reduce Motion walkthrough recorded.
 
