@@ -49,6 +49,18 @@ The AX5 test probe is a fixed `.caption2` text under the tab bar; its audit find
 Linux syntax/package checks are not an iOS accessibility result. A green exact-head native audit and manual evidence are still required before this report can be marked verified; do not merge or close #7.
 No device, signing, archive, or TestFlight evidence is claimed.
 
+### Remediation run 38271353633 (head `33c576de`)
+
+Run [38271353633](https://github.com/rwrife/pack-deck/actions/runs/38271353633) on pinned Xcode 26.0.1 built the app and ran 11 UI tests: 9 passed, 2 audit tests still failed (`Executed 11 tests, with 2 failures`). Commit `33c576d` made the probe `.body` primary text, shortened the tags placeholder, and removed the icon from `Import JSON Backup`. Compared with run 38140970153, these are gone: the probe Dynamic Type finding, the `tab.data`/`transfer.importJSON` clipping, and the `trip.tags` clipping. Still reported, not waived:
+
+| Finding | Element |
+| --- | --- |
+| Dynamic Type partially unsupported | `kit.save`, `kit.cancel`, `kit.edit`, `kit.item.add`, `trip.create`, trip builder nav bar |
+| Text clipped | `kit.name` field, `kit.item.add` |
+| Contrast failed | `trip.create` (disabled) and 5 unresolved SwiftUI nodes |
+
+Next candidates: remove the fixed `.frame(minWidth: 44, minHeight: 44)` on toolbar buttons (it may defeat scaling), find the unresolved contrast nodes from the retained trees, and make `kit.name` multiline without breaking Return-to-dismiss in `KitLibraryUITests`. The status stays failed until a fresh exact-head run passes.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
