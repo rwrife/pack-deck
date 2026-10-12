@@ -41,7 +41,7 @@ struct DataTransferView: View {
                 Button {
                     importing = true
                 } label: {
-                    Label("Import JSON Backup", systemImage: "square.and.arrow.down")
+                    Text("Import JSON Backup")
                 }
                 .accessibilityIdentifier("transfer.importJSON")
             }

@@ -65,11 +65,12 @@ struct TripBuilderView: View {
                     Text("Available").tag(LaundryAccess.available)
                     Text("Unavailable").tag(LaundryAccess.unavailable)
                 }
-                TextField("Activity tags (comma separated)", text: $tags)
+                TextField("Tags", text: $tags)
                     .focused($focusedField, equals: "tags")
                     .onSubmit { focusedField = nil }
                     .accessibilityIdentifier("trip.tags")
                     .accessibilityLabel("Activity tags, comma separated")
+                    .accessibilityHint("Separate tags with commas")
             }
             Section("Kits") {
                 ForEach(store.kits) { kit in

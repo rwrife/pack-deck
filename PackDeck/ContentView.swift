@@ -23,7 +23,9 @@ struct ContentView: View {
                 // actually applied to this view (rendered category renders
                 // as e.g. "accessibility5" for the AX5 token).
                 Text("Dynamic Type: \(String(describing: dynamicTypeSize))")
-                    .font(.caption2)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
                     .accessibilityIdentifier("accessibility.dynamicType")
             }
