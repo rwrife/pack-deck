@@ -61,6 +61,12 @@ Run [38271353633](https://github.com/rwrife/pack-deck/actions/runs/38271353633) 
 
 Next candidates: remove the fixed `.frame(minWidth: 44, minHeight: 44)` on toolbar buttons (it may defeat scaling), find the unresolved contrast nodes from the retained trees, and make `kit.name` multiline without breaking Return-to-dismiss in `KitLibraryUITests`. The status stays failed until a fresh exact-head run passes.
 
+### Exact-head rerun 38279780753 (head `4d331b6`)
+
+[Run 38279780753](https://github.com/rwrife/pack-deck/actions/runs/38279780753) completed with Linux package tests green and the pinned iOS build passing the built-app iPhone-family and bundle-ID checks. The UI lane executed 11 tests: 9 passed, 2 accessibility audits failed. No new app fix was validated. The job log identifies the kit-library note `Charger, travel adapter, and daily medication` as one concrete contrast failure; that text currently uses `.foregroundStyle(.secondary)` in `KitRow`. Other contrast reports have `element: nil` and cannot yet be attributed from the log. Kit editor reports clipped `kit.name` and `kit.item.add`; toolbar controls report partial Dynamic Type support, while the disabled `trip.create` reports both partial support and contrast failure. Do not waive these findings or remove the 44pt hit-target frames without rerunning the issue-#4 hit-target test. Log evidence disproves the earlier theory that the `.frame(minWidth: 44, minHeight: 44)` toolbar treatment causes the Dynamic Type finding: the New Trip `Cancel` button (`TripBuilderView`, no custom frame) and the system `EditButton` (`kit.edit`) are flagged identically, so the finding is generic to iOS 26 SwiftUI toolbar buttons at AX5 and cannot be fixed by deleting frames. Remaining decision for the owner: replace toolbar buttons with in-content controls, or accept/waive the system toolbar finding explicitly in the audit handler. The retained [xcresult artifact](https://github.com/rwrife/pack-deck/actions/runs/38279780753/artifacts/11761048708) needs screenshot/tree review on Apple tooling; no manual VoiceOver, external keyboard, or Reduce Motion walkthrough was performed. Keep draft and issue open.
+
+The identified kit-note contrast failure now uses primary text foreground (pending native audit). Remaining failures remain unresolved; this is not a passing accessibility audit.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |

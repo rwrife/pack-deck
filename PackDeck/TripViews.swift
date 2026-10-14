@@ -18,7 +18,7 @@ struct TripListView: View {
                         Text(trip.name).font(.headline)
                         if let summary = store.summary(for: trip) {
                             Text("\(summary.packed) of \(summary.totalItems) packed")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.primary) // AX5 audit contrast: secondary list meta text.
                         }
                     }
                 }
@@ -177,7 +177,7 @@ struct PackWorkspaceView: View {
                         Text("\(store.status(for: item).rawValue.capitalized) · \(item.recommendation.quantity) recommended")
                             .accessibilityIdentifier("workspace.status.\(item.name)")
                         Text("Reason: \(item.recommendation.reasonString.replacingOccurrences(of: "_", with: " "))")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(.primary) // AX5 audit contrast: secondary caption text.
                         HStack {
                             Menu("Set status") {
                                 ForEach([ItemStatus.packed, .missing, .omitted], id: \.self) { status in

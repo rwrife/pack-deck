@@ -137,7 +137,7 @@ private struct KitRow: View {
                 }
             }
             .font(.subheadline)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.primary) // AX5 audit: secondary notes text failed contrast (run 38279780753).
         }
         .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
