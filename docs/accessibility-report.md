@@ -67,6 +67,20 @@ Next candidates: remove the fixed `.frame(minWidth: 44, minHeight: 44)` on toolb
 
 The identified kit-note contrast failure now uses primary text foreground. [Run 38581151255](https://github.com/rwrife/pack-deck/actions/runs/38581151255) built the iPhone-only app on the pinned Xcode, verified `UIDeviceFamily == [1]` and `com.infinityball.packdeck`, then ran 11 UI tests: 9 passed, 2 accessibility audits failed (exit 65). The earlier kit-note contrast finding did not recur; the audit still reports unresolved contrast and clipping nodes, kit toolbar Dynamic Type findings, a clipped kit-name field/Add Item button, a `Checklist Export` contrast finding, a disabled `trip.create` contrast finding, and `Packing list`/`Set status` contrast findings. The trip/workspace secondary-text foreground changes did not eliminate these remaining findings. No finding has been waived. Keep draft and issue open.
 
+### Exact-head audit 38585648423 (head `ab7f131`)
+
+[Run 38585648423](https://github.com/rwrife/pack-deck/actions/runs/38585648423) passed Linux package tests, built on pinned Xcode 26.0.1 and SDK 26.0, checked the built app's `UIDeviceFamily == [1]` and `com.infinityball.packdeck`, then executed 11 UI tests: 9 passed, 2 accessibility audits failed (`** TEST FAILED **`, exit 65). AX5 journeys reached the library, editor, trip list, workspace, transfer screen, trip builder, and status/Undo checks. The log and retained [xcresult artifact](https://github.com/rwrife/pack-deck/actions/runs/38585648423/artifacts/11906362932) identify:
+
+| Screen | Current finding |
+| --- | --- |
+| Kit library | Contrast and text clipping; both reported `element: nil` |
+| Kit editor | Two contrast reports with unresolved elements; Dynamic Type on `kit.edit`, `kit.item.add`, `kit.cancel`, `kit.save`; clipping on `kit.item.add` and long `kit.name` value (`Long weekend carry...`) |
+| Data transfer | Contrast with unresolved element |
+| Trip builder | Contrast and Dynamic Type on disabled `trip.create`; Dynamic Type on `Cancel` |
+| Status/Undo | Audit recorded contrast (full assertion includes `Packing list`); status-text and keyboard-dismiss assertions themselves passed |
+
+The trip-list and packing-workspace audit calls emitted no standalone finding before navigation continued; the other screens remain red. Do not infer `element: nil` is harmless, waive findings, or call the partial journeys an audit pass. Review xcresult screenshots and trees on Apple tooling to localize unresolved nodes. Replace the one-line kit-name input with a multiline-safe control only after updating Return/focus UI tests; separately fix the 44-point `Add Item` layout without weakening hit-target coverage. Toolbar Dynamic Type warnings affect both app buttons and system `EditButton`/unframed `Cancel`, so removing hit-target frames alone is not a supported fix. Manual VoiceOver, external-keyboard, and Reduce Motion evidence still missing. Keep draft and #7 open.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
