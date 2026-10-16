@@ -85,6 +85,10 @@ The trip-list and packing-workspace audit calls emitted no standalone finding be
 
 [Run 38747676837](https://github.com/rwrife/pack-deck/actions/runs/38747676837) passed Linux package tests, built on the pinned Apple lane, then executed 11 UI tests: 9 passed, 2 AX5 audits failed (`Executed 11 tests, with 2 failures`; `** TEST FAILED **`). The log reports unresolved contrast and clipping nodes; the editor still reports clipping on `kit.name` and `kit.item.add`, plus partial Dynamic Type support on its toolbar buttons. The builder reports partial support on `Cancel` and disabled `trip.create`. Status/Undo and keyboard Return assertions completed before the final audit finding assertion. This is not a green native audit. A subsequent candidate removes the decorative Add Item glyph to give its text more room; it has not passed a native run. The single-line kit name remains because changing to a multiline TextField would break Return-to-dismiss and existing text-field UI queries without an Apple-verified replacement. No findings are waived. Keep draft and #7 open.
 
+### Exact-head audit 38916135828 (head `128ee9b`)
+
+[Run 38916135828](https://github.com/rwrife/pack-deck/actions/runs/38916135828) built on pinned Xcode 26.0.1 and SDK 26.0, checked iPhone-only and bundle ID, and executed 11 UI tests: 9 passed, 2 AX5 audits failed (`Executed 11 tests, with 2 failures`; `** TEST FAILED **`). Removing the decorative plus glyph on the Add Item button was confirmed in the element dump (measured 96.5x44, hit target intact), but it still reported partial Dynamic Type support along with `kit.save`, `kit.cancel`, `kit.edit`, and `trip.create`. The editor still reported clipped `kit.name` (single-line field `Long weekend carry...`), and data transfer reported a contrast finding on the `Checklist Export` section header. No finding is waived. The draft and issue #7 remain open pending a passing native audit and manual accessibility verification.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
