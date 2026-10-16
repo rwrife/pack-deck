@@ -18,7 +18,7 @@ struct TripListView: View {
                         Text(trip.name).font(.headline)
                         if let summary = store.summary(for: trip) {
                             Text("\(summary.packed) of \(summary.totalItems) packed")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.primary) // AX5 audit contrast: secondary list meta text.
                         }
                     }
                 }
@@ -40,6 +40,8 @@ struct TripListView: View {
 struct TripBuilderView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @FocusState private var focusedField: String?
     @State private var name = ""
     @State private var nights = 1
     @State private var laundry: LaundryAccess = .unknown
@@ -52,7 +54,10 @@ struct TripBuilderView: View {
         Form {
             Section("Trip") {
                 TextField("Trip name", text: $name)
+                    .focused($focusedField, equals: "name")
+                    .onSubmit { focusedField = nil }
                     .accessibilityIdentifier("trip.name")
+                    .accessibilityLabel("Trip name")
                 Stepper("Nights: \(nights)", value: $nights, in: 1...365)
                     .accessibilityIdentifier("trip.nights")
                 Picker("Laundry", selection: $laundry) {
@@ -60,8 +65,12 @@ struct TripBuilderView: View {
                     Text("Available").tag(LaundryAccess.available)
                     Text("Unavailable").tag(LaundryAccess.unavailable)
                 }
-                TextField("Activity tags (comma separated)", text: $tags)
+                TextField("Tags", text: $tags)
+                    .focused($focusedField, equals: "tags")
+                    .onSubmit { focusedField = nil }
                     .accessibilityIdentifier("trip.tags")
+                    .accessibilityLabel("Activity tags, comma separated")
+                    .accessibilityHint("Separate tags with commas")
             }
             Section("Kits") {
                 ForEach(store.kits) { kit in
@@ -75,9 +84,15 @@ struct TripBuilderView: View {
                 }
             }
             Section("Ad-hoc items") {
-                HStack {
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                    : AnyLayout(HStackLayout())
+                layout {
                     TextField("Item name", text: $adHocName)
+                        .focused($focusedField, equals: "adhoc")
+                        .onSubmit { focusedField = nil }
                         .accessibilityIdentifier("trip.adhoc.name")
+                        .accessibilityLabel("Ad-hoc item name")
                     Button("Add") {
                         adHocItems.append(AdHocItem(name: adHocName.trimmingCharacters(in: .whitespacesAndNewlines)))
                         adHocName = ""
@@ -162,7 +177,7 @@ struct PackWorkspaceView: View {
                         Text("\(store.status(for: item).rawValue.capitalized) · \(item.recommendation.quantity) recommended")
                             .accessibilityIdentifier("workspace.status.\(item.name)")
                         Text("Reason: \(item.recommendation.reasonString.replacingOccurrences(of: "_", with: " "))")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(.primary) // AX5 audit contrast: secondary caption text.
                         HStack {
                             Menu("Set status") {
                                 ForEach([ItemStatus.packed, .missing, .omitted], id: \.self) { status in
