@@ -134,8 +134,9 @@ struct KitEditorView: View {
                     Button {
                         addItem()
                     } label: {
-                        Label("Add Item", systemImage: "plus")
+                        Text("Add Item")
                     }
+                    // Text-only label avoids icon competing for width at AX5.
                     // Same 44pt hit-target treatment as the bar buttons above
                     // (issue #4): the plain bottom-bar glyph measured 33x36.
                     .frame(minWidth: 44, minHeight: 44)

@@ -81,6 +81,10 @@ The identified kit-note contrast failure now uses primary text foreground. [Run 
 
 The trip-list and packing-workspace audit calls emitted no standalone finding before navigation continued; the other screens remain red. Do not infer `element: nil` is harmless, waive findings, or call the partial journeys an audit pass. Review xcresult screenshots and trees on Apple tooling to localize unresolved nodes. Replace the one-line kit-name input with a multiline-safe control only after updating Return/focus UI tests; separately fix the 44-point `Add Item` layout without weakening hit-target coverage. Toolbar Dynamic Type warnings affect both app buttons and system `EditButton`/unframed `Cancel`, so removing hit-target frames alone is not a supported fix. Manual VoiceOver, external-keyboard, and Reduce Motion evidence still missing. Keep draft and #7 open.
 
+### Exact-head audit 38747676837 (head `2ce292c`)
+
+[Run 38747676837](https://github.com/rwrife/pack-deck/actions/runs/38747676837) passed Linux package tests, built on the pinned Apple lane, then executed 11 UI tests: 9 passed, 2 AX5 audits failed (`Executed 11 tests, with 2 failures`; `** TEST FAILED **`). The log reports unresolved contrast and clipping nodes; the editor still reports clipping on `kit.name` and `kit.item.add`, plus partial Dynamic Type support on its toolbar buttons. The builder reports partial support on `Cancel` and disabled `trip.create`. Status/Undo and keyboard Return assertions completed before the final audit finding assertion. This is not a green native audit. A subsequent candidate removes the decorative Add Item glyph to give its text more room; it has not passed a native run. The single-line kit name remains because changing to a multiline TextField would break Return-to-dismiss and existing text-field UI queries without an Apple-verified replacement. No findings are waived. Keep draft and #7 open.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
