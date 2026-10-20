@@ -106,6 +106,25 @@ The failures in `AccessibilityAuditUITests`:
 
 All findings remain documented, un-waived, and active blockers for PR #15 readiness. No manual VoiceOver, external keyboard, or Reduce Motion physical walkthrough has been completed. Issue #7 and PR #15 remain open in draft state.
 
+### Exact-head audit 39443439261 (head `6764dab`)
+
+[Run 39443439261](https://github.com/rwrife/pack-deck/actions/runs/39443439261) passed Linux package tests (`swift test` on PackDeckKit and PackDeckStore, zero-network and native-only gates), selected the exact pinned toolchain (Xcode 26.0.1 / 17A400 / SDK 26.0), verified iPhone-only settings (`UIDeviceFamily == [1]`), ensured the iOS 26.0 simulator runtime, built for iphonesimulator, and verified built `UIDeviceFamily == [1]` and `com.infinityball.packdeck` bundle identifier. The UI test suite executed 11 tests: 9 passed, 2 accessibility audits failed (`Executed 11 tests, with 2 failures (0 unexpected)`, exit 65).
+
+Result of section header contrast changes:
+- In `KitEditorView`, explicit `.foregroundStyle(.primary)` headers for `Kit` and `Items` eliminated the previous contrast failures for both labels.
+- In `TripViews` and `DataTransferView`, `Packing list` and `Checklist Export` header contrast findings did not recur.
+
+Remaining findings reported across tests:
+1. `testLargestTextAndReadingOrderAcrossPrimaryScreens`:
+   - Contrast on `kit.save` button and unresolved SwiftUI nodes (`element: nil`).
+   - Dynamic Type partially unsupported on `kit.cancel`, `kit.edit`, `kit.item.add`, and `kit.save`.
+   - Text clipped on `kit.name` (`TextField` with long value `Long weekend carry...`).
+2. `testStatusTextAndKeyboardFocusContract`:
+   - Dynamic Type partially unsupported on disabled `trip.create` and `Cancel` button.
+   - Contrast failure on disabled `trip.create` button.
+
+All remaining findings remain documented, un-waived, and active blockers. Manual VoiceOver, external keyboard, and Reduce Motion physical walkthrough remain unperformed. Issue #7 and PR #15 remain open in draft state.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
