@@ -78,7 +78,7 @@ struct KitEditorView: View {
 
     var body: some View {
         Form {
-            Section("Kit") {
+            Section {
                 TextField("Name", text: $name)
                     .focused($focusedField, equals: .name)
                     .onSubmit { focusedField = nil }
@@ -90,6 +90,9 @@ struct KitEditorView: View {
                     .focused($focusedField, equals: .notes)
                     .accessibilityIdentifier("kit.notes")
                     .accessibilityLabel("Kit notes")
+            } header: {
+                Text("Kit")
+                    .foregroundStyle(.primary) // AX5 audit: Section(_:) header inherited low contrast.
             }
 
             Section {
@@ -99,7 +102,7 @@ struct KitEditorView: View {
                 .onDelete(perform: deleteItems)
                 .onMove(perform: moveItems)
             } header: {
-                Text("Items")
+                Text("Items").foregroundStyle(.primary) // AX5 audit: header contrast.
             } footer: {
                 if items.isEmpty {
                     Text("Add items with the Add Item button below. Swipe rows to delete, or tap Edit to reorder.")

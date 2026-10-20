@@ -89,6 +89,23 @@ The trip-list and packing-workspace audit calls emitted no standalone finding be
 
 [Run 38916135828](https://github.com/rwrife/pack-deck/actions/runs/38916135828) built on pinned Xcode 26.0.1 and SDK 26.0, checked iPhone-only and bundle ID, and executed 11 UI tests: 9 passed, 2 AX5 audits failed (`Executed 11 tests, with 2 failures`; `** TEST FAILED **`). Removing the decorative plus glyph on the Add Item button was confirmed in the element dump (measured 96.5x44, hit target intact), but it still reported partial Dynamic Type support along with `kit.save`, `kit.cancel`, `kit.edit`, and `trip.create`. The editor still reported clipped `kit.name` (single-line field `Long weekend carry...`), and data transfer reported a contrast finding on the `Checklist Export` section header. No finding is waived. The draft and issue #7 remain open pending a passing native audit and manual accessibility verification.
 
+### Exact-head audit 38927080056 (head `f6fd666`)
+
+[Run 38927080056](https://github.com/rwrife/pack-deck/actions/runs/38927080056) passed Linux package tests (`swift test` on PackDeckKit and PackDeckStore, zero-network and native-only gates), selected the exact pinned toolchain (Xcode 26.0.1 / 17A400 / SDK 26.0), verified iPhone-only settings (`UIDeviceFamily == [1]`), ensured the iOS 26.0 simulator runtime, built for iphonesimulator, and verified built `UIDeviceFamily == [1]` and `com.infinityball.packdeck` bundle identifier. The UI test suite executed 11 tests: 9 passed, 2 accessibility audits failed (`Executed 11 tests, with 2 failures (0 unexpected)`, exit 65).
+
+The failures in `AccessibilityAuditUITests`:
+1. `testLargestTextAndReadingOrderAcrossPrimaryScreens` failed with audit findings including:
+   - Contrast failure on `Charger, travel adapter, and daily medication` static text in kit row (`KitRow`).
+   - Contrast failures on `Kit` and `Items` section header static texts in `KitEditorView`.
+   - Contrast failures on unresolved SwiftUI accessibility nodes (`element: nil`).
+   - Dynamic Type partially unsupported on `kit.item.add` (`Add Item`), `kit.cancel` (`Cancel`), `kit.edit` (`Edit`), and `kit.save` (`Save`).
+   - Text clipped on `kit.name` (`TextField` with long value `Long weekend carry...`).
+2. `testStatusTextAndKeyboardFocusContract` failed with 3 audit findings:
+   - Dynamic Type partially unsupported on disabled `trip.create` (`Create`) and `Cancel` button in trip builder navigation bar.
+   - Contrast failure on disabled `trip.create` button.
+
+All findings remain documented, un-waived, and active blockers for PR #15 readiness. No manual VoiceOver, external keyboard, or Reduce Motion physical walkthrough has been completed. Issue #7 and PR #15 remain open in draft state.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |

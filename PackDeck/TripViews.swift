@@ -170,7 +170,7 @@ struct PackWorkspaceView: View {
                 }
                 .accessibilityIdentifier("workspace.kitFilter")
             }
-            Section("Packing list") {
+            Section {
                 ForEach(items) { item in
                     VStack(alignment: .leading, spacing: 6) {
                         Text(item.name).font(.headline)
@@ -194,6 +194,8 @@ struct PackWorkspaceView: View {
                     }
                     .padding(.vertical, 4)
                 }
+            } header: {
+                Text("Packing list").foregroundStyle(.primary) // AX5 header contrast.
             }
         }
         .navigationTitle(trip.name)
