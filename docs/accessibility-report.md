@@ -125,6 +125,10 @@ Remaining findings reported across tests:
 
 All remaining findings remain documented, un-waived, and active blockers. Manual VoiceOver, external keyboard, and Reduce Motion physical walkthrough remain unperformed. Issue #7 and PR #15 remain open in draft state.
 
+### Exact-head audit 39451720456 (head `82868bc`)
+
+[Run 39451720456](https://github.com/rwrife/pack-deck/actions/runs/39451720456) passed Linux package tests and pinned iOS build/family/bundle checks. UI tests executed 11 tests with 4 failures (exit 65): both unwaived accessibility audits, plus `testKitEditorSurvivesExtraLargeDynamicType` (after Add Item tap, lazy `kit.item.name` row not found at AX5) and `testCreateTripFromKitPackAndUpdateProgress` (progress did not return to `0 of 1` after Undo within five seconds). New test diagnostics scroll the AX5 Form to reveal the item and report the full accessibility hierarchy/status on an Undo failure. Those changes still need exact-head Apple CI validation. Audit still identifies clipped `kit.name`, unsupported toolbar Dynamic Type, contrast on `kit.item.add` and disabled `trip.create`, contrast on `Packing list` and `Set status`, and unresolved nodes. Section header contrast changes from the prior run did not stay green across this run; no contrast finding is waived. Keep PR draft and #7 open.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |

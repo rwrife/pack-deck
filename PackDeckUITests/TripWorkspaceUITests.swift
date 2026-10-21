@@ -57,6 +57,7 @@ final class TripWorkspaceUITests: XCTestCase {
         while !progress.label.contains("0 of 1") && Date() < undoDeadline {
             usleep(100_000)
         }
-        XCTAssertTrue(progress.label.contains("0 of 1"), progress.label)
+        XCTAssertTrue(progress.label.contains("0 of 1"),
+                      "progress after Undo: \(progress.label); status: \(status.label); \(app.debugDescription)")
     }
 }
