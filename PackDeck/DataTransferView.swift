@@ -41,12 +41,12 @@ struct DataTransferView: View {
                 Button {
                     importing = true
                 } label: {
-                    Label("Import JSON Backup", systemImage: "square.and.arrow.down")
+                    Text("Import JSON Backup")
                 }
                 .accessibilityIdentifier("transfer.importJSON")
             }
 
-            Section("Checklist Export") {
+            Section {
                 Button {
                     do {
                         let data = try app.checklistCSV()
@@ -68,6 +68,8 @@ struct DataTransferView: View {
                     }
                     .accessibilityIdentifier("transfer.shareCSV")
                 }
+            } header: {
+                Text("Checklist Export").foregroundStyle(.primary) // AX5 header contrast.
             }
         }
         .navigationTitle("Data Transfer")

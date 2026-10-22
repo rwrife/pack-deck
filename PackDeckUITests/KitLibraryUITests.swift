@@ -195,7 +195,14 @@ final class KitLibraryUITests: XCTestCase {
         XCTAssertTrue(app.textFields["kit.name"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["kit.save"].isHittable, "Save clipped/unhittable at AX5")
         app.buttons["kit.item.add"].tap()
-        XCTAssertTrue(app.textFields["kit.item.name"].firstMatch.waitForExistence(timeout: 5))
+        let itemName = app.textFields["kit.item.name"].firstMatch
+        // Form rows below the AX5 viewport are lazy; scroll the Form, not the window.
+        let form = app.collectionViews.firstMatch
+        for _ in 0..<8 where !itemName.exists {
+            form.swipeUp()
+        }
+        XCTAssertTrue(itemName.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(itemName.isHittable, "Item name unreachable at AX5")
         XCTAssertTrue(app.buttons["kit.item.add"].isHittable, "Add Item clipped/unhittable at AX5")
     }
 
