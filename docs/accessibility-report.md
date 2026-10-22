@@ -129,6 +129,16 @@ All remaining findings remain documented, un-waived, and active blockers. Manual
 
 [Run 39451720456](https://github.com/rwrife/pack-deck/actions/runs/39451720456) passed Linux package tests and pinned iOS build/family/bundle checks. UI tests executed 11 tests with 4 failures (exit 65): both unwaived accessibility audits, plus `testKitEditorSurvivesExtraLargeDynamicType` (after Add Item tap, lazy `kit.item.name` row not found at AX5) and `testCreateTripFromKitPackAndUpdateProgress` (progress did not return to `0 of 1` after Undo within five seconds). New test diagnostics scroll the AX5 Form to reveal the item and report the full accessibility hierarchy/status on an Undo failure. Those changes still need exact-head Apple CI validation. Audit still identifies clipped `kit.name`, unsupported toolbar Dynamic Type, contrast on `kit.item.add` and disabled `trip.create`, contrast on `Packing list` and `Set status`, and unresolved nodes. Section header contrast changes from the prior run did not stay green across this run; no contrast finding is waived. Keep PR draft and #7 open.
 
+### Exact-head audit 39629843906 (head `2ed16d8`)
+
+[Run 39629843906](https://github.com/rwrife/pack-deck/actions/runs/39629843906) completed on the exact pinned toolchain (Xcode 26.0.1 / 17A400 / SDK 26.0). Linux package tests passed, built app verified `UIDeviceFamily == [1]` and `com.infinityball.packdeck`, and UI test suite ran 11 tests with 2 failures (exit 65):
+- The two diagnostic UI test regressions from run 39451720456 were resolved: `KitLibraryUITests.testKitEditorSurvivesExtraLargeDynamicType` passed (lazy item row resolved under AX5 Form scrolling) and `TripWorkspaceUITests.testCreateTripFromKitPackAndUpdateProgress` passed (Undo cycle completed within expected window). All 9 standard UI tests passed clean.
+- The 2 accessibility audits (`AccessibilityAuditUITests.testLargestTextAndReadingOrderAcrossPrimaryScreens` at line 109 and `testStatusTextAndKeyboardFocusContract` at line 148) failed on the known unwaived finding sets:
+  1. `testLargestTextAndReadingOrderAcrossPrimaryScreens`: Dynamic Type partially unsupported on toolbar buttons (`kit.save`, `kit.cancel`, `kit.edit`, `kit.item.add`), text clipping on `kit.name` (`TextField` with long title) and unresolved nodes, and contrast on `kit.save` plus unresolved SwiftUI accessibility nodes (`element: nil`).
+  2. `testStatusTextAndKeyboardFocusContract`: Dynamic Type partially unsupported on disabled `trip.create` and builder `Cancel`; contrast failure on disabled `trip.create`.
+
+All findings remain documented, un-waived, and active blockers for PR #15 readiness. No manual VoiceOver rotor/speech, external keyboard, or Reduce Motion physical walkthrough has been completed. Issue #7 and PR #15 remain open in draft state.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
