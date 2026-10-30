@@ -139,6 +139,22 @@ All remaining findings remain documented, un-waived, and active blockers. Manual
 
 All findings remain documented, un-waived, and active blockers for PR #15 readiness. No manual VoiceOver rotor/speech, external keyboard, or Reduce Motion physical walkthrough has been completed. Issue #7 and PR #15 remain open in draft state.
 
+### Exact-head audit 39787759021 (head `f6e8f9e`)
+
+[Run 39787759021](https://github.com/rwrife/pack-deck/actions/runs/39787759021) executed on pinned Xcode 26.0.1 (17A400) and iOS SDK 26.0:
+- Linux package tests (swift test): **SUCCESS** (PackDeckKit and PackDeckStore suites passed, zero network and native framework checks passed).
+- iOS build + iPhone-only + toolchain pin:
+  - Exact toolchain pin check: PASS (Xcode 26.0.1 / 17A400 / SDK 26.0).
+  - Pre-build and post-build iPhone-only verification: PASS (`TARGETED_DEVICE_FAMILY = 1` across targets; built app Info.plist `UIDeviceFamily == [1]`).
+  - Bundle identifier check: PASS (`com.infinityball.packdeck`).
+  - Privacy manifest check: PASS (`PrivacyInfo.xcprivacy` embedded).
+  - UI test suite (`PackDeckUITests.xctest`): 11 tests executed, 2 failures (`** TEST FAILED **`, exit 65).
+    - 9 functional UI tests passed clean across `DataTransferUITests`, `KitLibraryUITests`, and `TripWorkspaceUITests`.
+    - `AccessibilityAuditUITests.testLargestTextAndReadingOrderAcrossPrimaryScreens`: failed unexpectedly with `Code=-56 "Audit failed to complete in time"` during audit traversal on trip list after logging text clipping on `kit.name` (`Long weekend carry...`), unresolved contrast nodes (`element: nil`), Dynamic Type partially unsupported on `kit.item.add`, `kit.cancel`, `kit.edit`, and `kit.save`, and contrast failure on `kit.item.add`.
+    - `AccessibilityAuditUITests.testStatusTextAndKeyboardFocusContract`: failed at line 148 on Dynamic Type partially unsupported on builder `Cancel` and disabled `trip.create`, plus contrast failure on disabled `trip.create`.
+
+No findings are waived or masked. PR #15 remains draft; issue #7 remains open. Exact-head native audit pass and physical VoiceOver/keyboard verification remain required before merge.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
