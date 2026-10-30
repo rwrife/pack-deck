@@ -155,6 +155,35 @@ All findings remain documented, un-waived, and active blockers for PR #15 readin
 
 No findings are waived or masked. PR #15 remains draft; issue #7 remains open. Exact-head native audit pass and physical VoiceOver/keyboard verification remain required before merge.
 
+### Exact-head audit 41055391475 (head `c8fe82e`)
+
+[Run 41055391475](https://github.com/rwrife/pack-deck/actions/runs/41055391475) executed on pinned Xcode 26.0.1 (17A400) and iOS SDK 26.0:
+- Linux package tests (swift test): **SUCCESS** (PackDeckKit and PackDeckStore suites passed, zero network and native framework gates passed).
+- iOS build + iPhone-only + toolchain pin:
+  - Exact toolchain pin check: PASS (Xcode 26.0.1, build 17A400, SDK 26.0).
+  - Pre-build and post-build iPhone-only verification: PASS (`TARGETED_DEVICE_FAMILY = 1` across targets; built app Info.plist `UIDeviceFamily == [1]`).
+  - Bundle identifier check: PASS (`com.infinityball.packdeck`).
+  - UI test suite (`PackDeckUITests.xctest`): 11 tests executed, with 2 expected audit failures (0 unexpected) in 334.630s:
+    - All 9 standard UI tests passed clean:
+      - `DataTransferUITests.testOfflineTransferActionsAreReachable` (10.215s)
+      - `KitLibraryUITests.testCreateKitAddItemSaveReopenRoundTrip` (33.671s)
+      - `KitLibraryUITests.testDeleteReferencedKitWarnsThenDeletesOnConfirm` (37.153s)
+      - `KitLibraryUITests.testDeleteUnreferencedKitHasNoWarning` (22.722s)
+      - `KitLibraryUITests.testInteractiveControlsExposeAccessibilityLabels` (13.089s)
+      - `KitLibraryUITests.testInteractiveControlsMeetMinimumHitTargets` (15.472s)
+      - `KitLibraryUITests.testKitEditorSurvivesExtraLargeDynamicType` (14.084s)
+      - `KitLibraryUITests.testKitPersistsAcrossAppRelaunch` (32.342s)
+      - `TripWorkspaceUITests.testCreateTripFromKitPackAndUpdateProgress` (40.137s)
+    - `AccessibilityAuditUITests.testLargestTextAndReadingOrderAcrossPrimaryScreens` failed (70.689s) at line 109 with collected findings:
+      - Dynamic Type partially unsupported: `kit.save`, `kit.item.add`, `kit.edit`, `kit.cancel`.
+      - Text clipped: `kit.name` (`TextField` with value `Long weekend carry...`) and one unresolved node (`element: nil`).
+      - Contrast failed: `kit.item.add` and four unresolved nodes (`element: nil`).
+    - `AccessibilityAuditUITests.testStatusTextAndKeyboardFocusContract` failed (45.055s) at line 148 with collected findings:
+      - Dynamic Type partially unsupported: builder `Cancel` and disabled `trip.create`.
+      - Contrast failed: disabled `trip.create`.
+- Code=-56 timeout did not recur on this run; the full traversal finished across all screens.
+- All reported findings remain unwaived. PR #15 remains draft; issue #7 remains open. Exact-head native audit pass and physical VoiceOver/keyboard verification remain required before merge.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
