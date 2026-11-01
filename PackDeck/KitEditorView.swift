@@ -128,6 +128,7 @@ struct KitEditorView: View {
                     save()
                 }
                 .disabled(!canSave)
+                .tint(.primary) // AX5 audit: system accent text may lack contrast against toolbar.
                 .frame(minWidth: 44, minHeight: 44)
                 .contentShape(Rectangle())
                 .accessibilityIdentifier("kit.save")
@@ -139,6 +140,7 @@ struct KitEditorView: View {
                     } label: {
                         Text("Add Item")
                     }
+                    .tint(.primary) // Preserve text contrast in bottom toolbar at AX5.
                     // Text-only label avoids icon competing for width at AX5.
                     // Same 44pt hit-target treatment as the bar buttons above
                     // (issue #4): the plain bottom-bar glyph measured 33x36.
