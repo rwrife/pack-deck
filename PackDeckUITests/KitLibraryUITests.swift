@@ -50,7 +50,7 @@ final class KitLibraryUITests: XCTestCase {
 
         // Reopen: values must come back from disk, not view state.
         row.tap()
-        let nameField = app.textFields["kit.name"]
+        let nameField = kitNameField()
         XCTAssertTrue(nameField.waitForExistence(timeout: 10))
         XCTAssertEqual(nameField.value as? String, "Carry-on Tech")
 
@@ -152,8 +152,8 @@ final class KitLibraryUITests: XCTestCase {
         XCTAssertTrue(addButton.isHittable)
 
         addButton.tap()
-        XCTAssertTrue(app.textFields["kit.name"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.textFields["kit.name"].label, "Kit name")
+        XCTAssertTrue(kitNameField().waitForExistence(timeout: 10))
+        XCTAssertEqual(kitNameField().label, "Kit name")
         XCTAssertEqual(app.textFields["kit.notes"].label, "Kit notes")
         XCTAssertTrue(app.buttons["kit.save"].label.contains("Save"))
 
@@ -192,7 +192,7 @@ final class KitLibraryUITests: XCTestCase {
         XCTAssertTrue(addButton.waitForExistence(timeout: 15))
         addButton.tap()
 
-        XCTAssertTrue(app.textFields["kit.name"].waitForExistence(timeout: 10))
+        XCTAssertTrue(kitNameField().waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["kit.save"].isHittable, "Save clipped/unhittable at AX5")
         app.buttons["kit.item.add"].tap()
         let itemName = app.textFields["kit.item.name"].firstMatch
@@ -207,6 +207,10 @@ final class KitLibraryUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private func kitNameField() -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "kit.name").firstMatch
+    }
 
     /// Finds the kit row by its identifier wherever it surfaces in the
     /// hierarchy (cell or NavigationLink button depending on iOS version).
@@ -233,10 +237,14 @@ final class KitLibraryUITests: XCTestCase {
         quantityTaps: Int,
         category: String
     ) {
-        let nameField = app.textFields["kit.name"]
+        let nameField = kitNameField()
         XCTAssertTrue(nameField.waitForExistence(timeout: 10), "kit editor missing")
         nameField.tap()
-        nameField.typeText("\(name)\n")   // newline submits & dismisses keyboard
+        nameField.typeText(name)
+        let done = app.buttons["kit.keyboard.done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "multiline keyboard Done missing")
+        done.tap()
+        XCTAssertEqual(app.keyboards.count, 0, "Done did not dismiss kit name keyboard")
 
         app.buttons["kit.item.add"].tap()
         let itemField = app.textFields["kit.item.name"].firstMatch

@@ -75,8 +75,11 @@ final class AccessibilityAuditUITests: XCTestCase {
         accumulatedFindings += try audit()
 
         kitRow.tap()
-        XCTAssertTrue(app.textFields["kit.name"].waitForExistence(timeout: 10))
-        XCTAssertEqual(app.textFields["kit.name"].label, "Kit name")
+        let kitName = app.descendants(matching: .any).matching(identifier: "kit.name").firstMatch
+        XCTAssertTrue(kitName.waitForExistence(timeout: 10))
+        XCTAssertEqual(kitName.label, "Kit name")
+        XCTAssertTrue(kitName.value as? String == "Long weekend carry-on essentials",
+                      "long kit name missing from editable value: \(String(describing: kitName.value))")
         XCTAssertTrue(app.buttons["kit.save"].isHittable)
         evidence("AX5-kit-editor")
         accumulatedFindings += try audit()

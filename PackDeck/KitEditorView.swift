@@ -45,9 +45,8 @@ struct EditableItem: Identifiable {
 /// (identity-stable bindings) plus the standard `EditButton`. For existing
 /// kits, also offers delete — with a warning when trips still reference it.
 struct KitEditorView: View {
-    /// Focus tokens so the keyboard can be dismissed deterministically via
-    /// the return key (onSubmit) — required for both good UX and stable UI
-    /// tests over the bottom-bar toolbar.
+    /// Focus tokens let Done dismiss multiline name/notes keyboards and
+    /// Return dismiss item fields before using bottom-bar controls.
     enum EditorFocus: Hashable {
         case name, notes, item(UUID)
     }
@@ -79,9 +78,8 @@ struct KitEditorView: View {
     var body: some View {
         Form {
             Section {
-                TextField("Name", text: $name)
+                TextField("Name", text: $name, axis: .vertical)
                     .focused($focusedField, equals: .name)
-                    .onSubmit { focusedField = nil }
                     .accessibilityIdentifier("kit.name")
                     .accessibilityLabel("Kit name")
                 TextField("Notes (optional)", text: $notes, axis: .vertical)
@@ -112,6 +110,11 @@ struct KitEditorView: View {
         .navigationTitle(isNew ? "New Kit" : "Edit Kit")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedField = nil }
+                    .accessibilityIdentifier("kit.keyboard.done")
+            }
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
                     dismiss()
