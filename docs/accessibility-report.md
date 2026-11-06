@@ -188,6 +188,19 @@ No findings are waived or masked. PR #15 remains draft; issue #7 remains open. E
 
 [Run 41445346008](https://github.com/rwrife/pack-deck/actions/runs/41445346008) passed Linux package tests and selected the pinned Xcode 26.0.1 / 17A400 and iOS 26.0 SDK. The native build verified `UIDeviceFamily == [1]`, `com.infinityball.packdeck`, and the embedded privacy manifest. The UI suite ran 11 tests: 9 passed; both accessibility audits failed (`** TEST FAILED **`, exit 65). The multiline kit-name edit removed the prior `kit.name` clipping report; the only remaining clipping report has `element: nil` on the library screen. Contrast still fails on unresolved nodes across primary screens. Kit toolbar buttons (`kit.save`, `kit.cancel`, `kit.edit`, `kit.item.add`) and trip-builder `Cancel`/disabled `trip.create` still trigger partial Dynamic Type support; disabled `trip.create` still triggers contrast. The exact-head artifact [uitest-results-2](https://github.com/rwrife/pack-deck/actions/runs/41445346008/artifacts/13146707044) retains screenshots and trees. This PR now tags each audit finding with the screen name, including unresolved-element findings, so the next Apple run can localize them without inferring a culprit from adjacent UI events. No finding is waived. Manual VoiceOver, external-keyboard, and Reduce Motion walkthroughs remain missing. Keep PR draft and issue open.
 
+### Exact-head audit 42027652350 (head `56e51cf`)
+
+[Run 42027652350](https://github.com/rwrife/pack-deck/actions/runs/42027652350) passed Linux package tests and selected the pinned Xcode 26.0.1 / 17A400 and iOS 26.0 SDK. Built app passed `TARGETED_DEVICE_FAMILY = 1` and `com.infinityball.packdeck` assertions. The UI test suite executed 11 tests: 9 passed, both accessibility audits failed (`** TEST FAILED **`, exit 65):
+- `testLargestTextAndReadingOrderAcrossPrimaryScreens` (73.837s):
+  - Dynamic Type partially unsupported: `kit.save`, `kit.item.add`, `kit.cancel`, `kit.edit`.
+  - Text clipped: `element: nil` on `kit-library`.
+  - Contrast failed: `element: nil` on `kit-library`, `kit-editor` (x2), and `data-transfer`.
+- `testStatusTextAndKeyboardFocusContract` (40.697s):
+  - Contrast failed: disabled `trip.create`.
+  - Dynamic Type partially unsupported: disabled `trip.create` and builder `Cancel`.
+
+Screen-tagged diagnostics confirmed contrast findings localize to `kit-library`, `kit-editor`, `data-transfer`, and `trip-builder` (disabled `trip.create`). All findings remain unwaived. PR #15 remains draft; issue #7 remains open.
+
 ## Findings and fixes
 
 | Finding from source inspection | Fix | Evidence required |
