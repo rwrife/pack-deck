@@ -45,9 +45,8 @@ struct EditableItem: Identifiable {
 /// (identity-stable bindings) plus the standard `EditButton`. For existing
 /// kits, also offers delete — with a warning when trips still reference it.
 struct KitEditorView: View {
-    /// Focus tokens so the keyboard can be dismissed deterministically via
-    /// the return key (onSubmit) — required for both good UX and stable UI
-    /// tests over the bottom-bar toolbar.
+    /// Focus tokens let Done dismiss multiline name/notes keyboards and
+    /// Return dismiss item fields before using bottom-bar controls.
     enum EditorFocus: Hashable {
         case name, notes, item(UUID)
     }
@@ -78,17 +77,20 @@ struct KitEditorView: View {
 
     var body: some View {
         Form {
-            Section("Kit") {
-                TextField("Name", text: $name)
+            Section {
+                TextField("Name", text: $name, axis: .vertical)
                     .focused($focusedField, equals: .name)
-                    .onSubmit { focusedField = nil }
                     .accessibilityIdentifier("kit.name")
                     .accessibilityLabel("Kit name")
                 TextField("Notes (optional)", text: $notes, axis: .vertical)
-                    .lineLimit(1...3)
+                    // No upper lineLimit: caps truncate notes at large
+                    // Dynamic Type sizes (issue #7 audit).
                     .focused($focusedField, equals: .notes)
                     .accessibilityIdentifier("kit.notes")
                     .accessibilityLabel("Kit notes")
+            } header: {
+                Text("Kit")
+                    .foregroundStyle(.primary) // AX5 audit: Section(_:) header inherited low contrast.
             }
 
             Section {
@@ -98,7 +100,7 @@ struct KitEditorView: View {
                 .onDelete(perform: deleteItems)
                 .onMove(perform: moveItems)
             } header: {
-                Text("Items")
+                Text("Items").foregroundStyle(.primary) // AX5 audit: header contrast.
             } footer: {
                 if items.isEmpty {
                     Text("Add items with the Add Item button below. Swipe rows to delete, or tap Edit to reorder.")
@@ -108,6 +110,11 @@ struct KitEditorView: View {
         .navigationTitle(isNew ? "New Kit" : "Edit Kit")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedField = nil }
+                    .accessibilityIdentifier("kit.keyboard.done")
+            }
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
                     dismiss()
@@ -124,6 +131,7 @@ struct KitEditorView: View {
                     save()
                 }
                 .disabled(!canSave)
+                .tint(.primary) // AX5 audit: system accent text may lack contrast against toolbar.
                 .frame(minWidth: 44, minHeight: 44)
                 .contentShape(Rectangle())
                 .accessibilityIdentifier("kit.save")
@@ -133,8 +141,10 @@ struct KitEditorView: View {
                     Button {
                         addItem()
                     } label: {
-                        Label("Add Item", systemImage: "plus")
+                        Text("Add Item")
                     }
+                    .tint(.primary) // Preserve text contrast in bottom toolbar at AX5.
+                    // Text-only label avoids icon competing for width at AX5.
                     // Same 44pt hit-target treatment as the bar buttons above
                     // (issue #4): the plain bottom-bar glyph measured 33x36.
                     .frame(minWidth: 44, minHeight: 44)
@@ -293,6 +303,7 @@ private struct QuantityStepper: View {
 /// One editable item row: name, quantity stepper, optional category.
 private struct ItemRow: View {
     @Binding var item: EditableItem
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @FocusState.Binding var focusedField: KitEditorView.EditorFocus?
 
     var body: some View {
@@ -304,7 +315,12 @@ private struct ItemRow: View {
                 .accessibilityIdentifier("kit.item.name")
                 .accessibilityLabel("Item name")
 
-            HStack(spacing: 12) {
+            // At accessibility text sizes the horizontal row (stepper +
+            // category field) squeezes into truncation; stack it instead.
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                : AnyLayout(HStackLayout(spacing: 12))
+            layout {
                 QuantityStepper(quantity: $item.quantity)
 
                 TextField("Category", text: $item.category)
@@ -317,6 +333,7 @@ private struct ItemRow: View {
         }
         .padding(.vertical, 4)
     }
+
 }
 
 #Preview("New Kit") {

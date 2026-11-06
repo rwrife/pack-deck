@@ -7,10 +7,11 @@ final class TripWorkspaceUITests: XCTestCase {
         app.launch()
 
         app.buttons["kit.add.empty"].tap()
-        let kitName = app.textFields["kit.name"]
+        let kitName = app.descendants(matching: .any).matching(identifier: "kit.name").firstMatch
         XCTAssertTrue(kitName.waitForExistence(timeout: 10))
         kitName.tap()
-        kitName.typeText("Weekender\n")
+        kitName.typeText("Weekender")
+        app.buttons["kit.keyboard.done"].tap()
         app.buttons["kit.item.add"].tap()
         let itemName = app.textFields["kit.item.name"].firstMatch
         XCTAssertTrue(itemName.waitForExistence(timeout: 10))
@@ -57,6 +58,7 @@ final class TripWorkspaceUITests: XCTestCase {
         while !progress.label.contains("0 of 1") && Date() < undoDeadline {
             usleep(100_000)
         }
-        XCTAssertTrue(progress.label.contains("0 of 1"), progress.label)
+        XCTAssertTrue(progress.label.contains("0 of 1"),
+                      "progress after Undo: \(progress.label); status: \(status.label); \(app.debugDescription)")
     }
 }
